@@ -74,7 +74,7 @@ def create_main_window(openai_service, config: dict) -> None:
     refresh_button.pack(side="left", padx=5)
 
     button_frame = tk.Frame(root)
-    button_frame.pack(pady=10)
+    button_frame.pack(anchor="w", padx=100, pady=10)
     button_frame_top = tk.Frame(button_frame, bd=1, relief="groove", pady=5)
     button_frame_top.pack(pady=5)
     button_frame_bottom = tk.Frame(button_frame, bd=1, relief="groove", pady=5)
