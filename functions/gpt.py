@@ -43,7 +43,7 @@ def summarize(input_text,
     if not email_text:
         return
     document_text = ""
-    if attached_file_checkbox_var.get and attached_file_path:
+    if attached_file_checkbox_var.get() and attached_file_path:
         document_text = extract_text_from_file(attached_file_path)
         print("INFO: Appending attached document content")
 
