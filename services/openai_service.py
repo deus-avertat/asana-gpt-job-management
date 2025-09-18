@@ -8,10 +8,10 @@ class OpenAIService:
     def __init__(self, api_key: str):
         self.client = openai.OpenAI(api_key=api_key)
 
-    def generate_response(self, prompt: str) -> str:
+    def generate_response(self, model_list_var, prompt: str) -> str:
         """Return the assistant's reply for the given prompt."""
         response = self.client.chat.completions.create(
-            model="gpt-4",
+            model=model_list_var,
             messages=[{"role": "user", "content": prompt}]
         )
         return response.choices[0].message.content

@@ -45,7 +45,7 @@ def send_to_asana(output_text, input_text,
         summary_without_tasks = re.sub(bullet_point_pattern, "", summary, flags=re.MULTILINE).strip() # Strips bullet point tasks from summary
         notes = f"Email: \n{summary_without_tasks}" # Formats description of Asana job
 
-        # Get Priority
+        # Get Priority - This section is dependent on your Asana setup. We use tags to assign priority. This field can be edited to suit and tags you wish to assign.
         priority_mapping = {
             "None": "1201356624548797",
             "Low": "1201356624548796",

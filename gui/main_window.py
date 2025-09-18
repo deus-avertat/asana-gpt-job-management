@@ -48,20 +48,23 @@ def create_main_window(openai_service, config: dict) -> None:
     print(f"INFO: Set Asana Workspace as: {asana_workspace}")
     print(f"INFO: Today's Date: {datetime.date.today().isoformat()}")
 
+    # Root Window
     root = tk.Tk()
     root.title("ChatGPT Email Assistant")
     root.geometry("800x960")
 
+    # Email Input
     input_label = tk.Label(root, text="Paste Email Content Here:")
     input_label.pack()
 
     input_text = scrolledtext.ScrolledText(root, height=10, wrap=tk.WORD)
     input_text.pack(fill=tk.BOTH, padx=6, pady=5, expand=True)
 
+    # Email history
     history_frame = tk.Frame(root)
     history_frame.pack(pady=5)
 
-    history_list = tk.Menubutton(history_frame, text="Load History", relief="raised")
+    history_list = tk.Menubutton(history_frame, text="Load History", relief="groove")
     history_list.menu = tk.Menu(history_list, tearoff=0)
     history_list["menu"] = history_list.menu
     history_list.pack(side="left")
@@ -73,13 +76,29 @@ def create_main_window(openai_service, config: dict) -> None:
     )
     refresh_button.pack(side="left", padx=5)
 
-    button_frame = tk.Frame(root)
-    button_frame.pack(anchor="w", padx=100, pady=10)
-    button_frame_top = tk.Frame(button_frame, bd=1, relief="groove", pady=5)
-    button_frame_top.pack(pady=5)
-    button_frame_bottom = tk.Frame(button_frame, bd=1, relief="groove", pady=5)
-    button_frame_bottom.pack(pady=5)
+    # Button Frames
+    button_frame_main = tk.Frame(root)
+    button_frame_main.pack()
 
+    button_frame_left = tk.Frame(button_frame_main)
+    button_frame_left.grid(column=0, row=0, padx=10)
+    button_frame_left_top = tk.Frame(button_frame_left, bd=1, relief="groove", pady=5)
+    button_frame_left_top.pack(pady=5)
+    button_frame_left_bottom = tk.Frame(button_frame_left, bd=1, relief="groove", pady=5)
+    button_frame_left_bottom.pack(pady=5)
+
+    button_frame_right = tk.Frame(button_frame_main)
+    button_frame_right.grid(column=1, row=0, padx=10)
+    button_frame_right_top = tk.Frame(button_frame_right, bd=1, relief="groove", pady=5)
+    button_frame_right_top.pack(pady=5)
+    button_frame_right_bottom = tk.Frame(button_frame_right, bd=1, relief="groove", pady=5)
+    button_frame_right_bottom.pack(pady=5)
+
+    model_list_var = tk.StringVar(value="gpt-4.0")
+    model_list = ttk.OptionMenu(button_frame_right_top, model_list_var, "gpt-4.0", "gpt-4.1", "gpt-5", "o4-mini")
+    model_list.grid(row=0, column=0, padx=5)
+
+    # Variables for ChatGPT output
     tone_var = tk.StringVar(value="Professional")
     length_var = tk.StringVar(value="Short")
     draft_length_map = {
@@ -88,9 +107,10 @@ def create_main_window(openai_service, config: dict) -> None:
         "Long": "two paragraph",
     }
 
+    # OpenAI function
     def call_openai(prompt: str, output_widget: tk.Text, mode: str) -> None:
         try:
-            reply = openai_service.generate_response(prompt)
+            reply = openai_service.generate_response(model_list_var, prompt)
             print("INFO: Saving to local history")
             functions.database.save_to_history(mode, tone_var.get(), prompt, reply)
             output_widget.config(state=tk.NORMAL)
@@ -103,6 +123,7 @@ def create_main_window(openai_service, config: dict) -> None:
 
     attached_file_path = None
 
+    # Attach file function (WIP)
     def attach_file() -> None:
         nonlocal attached_file_path
         file_path = filedialog.askopenfilename(
@@ -118,8 +139,9 @@ def create_main_window(openai_service, config: dict) -> None:
             attached_file_path = file_path
             print(f"INFO: Attached file: {file_path}")
 
+    # Summarize content in the email field
     summarize_button = tk.Button(
-        button_frame_top,
+        button_frame_left_top,
         text="Summarise",
         command=lambda: functions.gpt.summarize(
             input_text,
@@ -134,8 +156,9 @@ def create_main_window(openai_service, config: dict) -> None:
     )
     summarize_button.grid(row=0, column=0, padx=5)
 
+    # Draft response based on content in the email field
     draft_button = tk.Button(
-        button_frame_top,
+        button_frame_left_top,
         text="Draft Reply",
         command=lambda: functions.gpt.draft_reply(
             tone_var,
@@ -147,18 +170,21 @@ def create_main_window(openai_service, config: dict) -> None:
     )
     draft_button.grid(row=0, column=1, padx=5)
 
-    attach_button = tk.Button(button_frame_top, text="Attach Document", command=attach_file)
+    # Attach file button
+    attach_button = tk.Button(button_frame_left_top, text="Attach Document", command=attach_file)
     attach_button.grid(row=0, column=2, padx=5)
 
+    # Copy response text
     copy_button = tk.Button(
-        button_frame_bottom,
+        button_frame_left_bottom,
         text="Copy Output",
         command=lambda: functions.ui.copy_output(root, output_text),
     )
     copy_button.grid(row=1, column=0, padx=5)
 
+    # Send job to asana button
     asana_button = tk.Button(
-        button_frame_bottom,
+        button_frame_left_bottom,
         text="Add to Asana",
         command=lambda: functions.asana_api.send_to_asana(
             output_text,
