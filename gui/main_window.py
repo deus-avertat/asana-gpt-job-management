@@ -1,35 +1,16 @@
 import datetime
-import os
 import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext, ttk
 
 from tkcalendar import DateEntry
 from openai import OpenAIError
-from docx import Document
-import PyPDF2
 
 import functions.asana_api
 import functions.database
 import functions.gpt
 import functions.ui
-
-
-# Helper ------------------------------------------------------------
-
-def extract_text_from_file(path: str) -> str:
-    ext = os.path.splitext(path)[1].lower()
-    if ext == ".txt":
-        with open(path, "r", encoding="utf-8") as f:
-            return f.read()
-    if ext == ".pdf":
-        with open(path, "rb") as f:
-            reader = PyPDF2.PdfReader(f)
-            return "\n".join(page.extract_text() or "" for page in reader.pages)
-    if ext == ".docx":
-        doc = Document(path)
-        return "\n".join(p.text for p in doc.paragraphs)
-    return ""
-
+from functions.files import extract_text_from_file
+from gui.invoice_window import create_invoice_window
 
 # GUI ----------------------------------------------------------------
 
@@ -52,6 +33,23 @@ def create_main_window(openai_service, config: dict) -> None:
     root = tk.Tk()
     root.title("ChatGPT Email Assistant")
     root.geometry("800x960")
+
+    default_model = config.get("default_model", "gpt-4.0")
+
+    # Shared model selection across windows
+    model_list_var = tk.StringVar(value=default_model)
+    root.shared_model_var = model_list_var
+
+    invoice_window = None
+
+    def show_main() -> None:
+        if invoice_window is not None:
+            invoice_window.withdraw()
+        root.deiconify()
+        root.lift()
+
+    invoice_window = create_invoice_window(root, openai_service, config, show_main)
+    invoice_window.withdraw()
 
     # Email Input
     input_label = tk.Label(root, text="Paste Email Content Here:")
@@ -94,8 +92,15 @@ def create_main_window(openai_service, config: dict) -> None:
     button_frame_right_bottom = tk.Frame(button_frame_right, bd=1, relief="groove", pady=5)
     button_frame_right_bottom.pack(pady=5)
 
-    model_list_var = tk.StringVar(value="gpt-4.0")
-    model_list = ttk.OptionMenu(button_frame_right_top, model_list_var, "gpt-4.0", "gpt-4.1", "gpt-5", "o4-mini")
+    model_list = ttk.OptionMenu(
+        button_frame_right_top,
+        model_list_var,
+        default_model,
+        "gpt-4.0",
+        "gpt-4.1",
+        "gpt-5",
+        "o4-mini",
+    )
     model_list.grid(row=0, column=0, padx=5)
 
     # Variables for ChatGPT output
@@ -138,6 +143,11 @@ def create_main_window(openai_service, config: dict) -> None:
         if file_path:
             attached_file_path = file_path
             print(f"INFO: Attached file: {file_path}")
+
+    def show_invoice_window() -> None:
+        root.withdraw()
+        invoice_window.deiconify()
+        invoice_window.lift()
 
     # Summarize content in the email field
     summarize_button = tk.Button(
@@ -198,6 +208,13 @@ def create_main_window(openai_service, config: dict) -> None:
         ),
     )
     asana_button.grid(row=1, column=1, padx=5)
+
+    invoice_button = tk.Button(
+        button_frame_left_bottom,
+        text="Invoice Notes",
+        command=show_invoice_window,
+    )
+    invoice_button.grid(row=0, column=0, columnspan=2, padx=5, pady=(0, 5), sticky="ew")
 
     options_frame = tk.Frame(root)
     options_frame.pack()

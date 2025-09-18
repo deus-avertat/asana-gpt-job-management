@@ -55,3 +55,25 @@ def summarize(input_text,
     if fixes_checkbox_var.get():
         prompt += "\n\nAlso provide a possible fix to the issue mentioned"
     threading.Thread(target=call_openai, args=(prompt, output_text)).start()
+
+
+def draft_invoice_note(note_style_var,
+                       input_text,
+                       output_text,
+                       call_openai):
+    """Generate a GPT prompt tailored for writing invoice notes."""
+
+    note_style = note_style_var.get()
+    print(f"INFO: Drafting a {note_style.lower()} invoice note")
+    invoice_text = input_text.get("1.0", tk.END).strip()
+    if not invoice_text:
+        return
+
+    prompt = (
+        "Create an invoice note summarising the critical billing details, "
+        "outstanding actions, and follow-up requirements from the following "
+        f"information. Write the note in a {note_style.lower()} tone that can be "
+        "pasted directly into the client's invoice record.\n\n"
+        f"{invoice_text}"
+    )
+    threading.Thread(target=call_openai, args=(prompt, output_text)).start()
