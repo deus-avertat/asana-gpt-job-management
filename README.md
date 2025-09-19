@@ -1,4 +1,11 @@
-This shit is a mess, i will eventually separate it out into individual modules rather than all been in one python file.
+**Summary**
+
+We use Toggl and Asana for logging jobs. The way we used to do it involved a lot of copying and pasting so I made this software to streamline the process a bit as well as teach myself how the OpenAI API works.
+
+This program lets you copy in an email and generate a summary as well as create dot-pointed tasks for the job. You can then directly send this to Asana via the Asana API and it will create a job, assign the priority, and generate sub-tasks.
+It also has a seperate window built in to assist with generating job notes to go on the final invoice. Currently there is no integration with GeoOp and Xero.
+
+This shit is a mess and probably has a lot of unmaintanable code. Some parts were vibe coded using OpenAI's Codex.
 
 **Main Window**
 
