@@ -26,10 +26,11 @@ def init_history_db():
 def save_to_history(mode, tone, email_text, response):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
+    cleaned_response = functions.ui.normalize_markdown_spacing(response or "")
     c.execute('''
             INSERT INTO history (timestamp, mode, tone, input, output)
             VALUES (?, ?, ?, ?, ?)
-        ''', (datetime.now().isoformat(), mode, tone, email_text, response))
+        ''', (datetime.now().isoformat(), mode, tone, email_text, cleaned_response))
     conn.commit()
     conn.close()
 
