@@ -2,8 +2,14 @@ import datetime
 import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext, ttk
 
-from tkcalendar import DateEntry
+from vendor_setup import ensure_vendor_path
+
+ensure_vendor_path()
+
+import markdown
 from openai import OpenAIError
+from tkcalendar import DateEntry
+from tkhtmlview import HTMLScrolledText
 
 import functions.asana_api
 import functions.database
@@ -127,6 +133,9 @@ def create_main_window(openai_service, config: dict) -> None:
     input_text = scrolledtext.ScrolledText(root, height=10, wrap=tk.WORD)
     input_text.pack(fill=tk.BOTH, padx=6, pady=5, expand=True)
 
+    output_label = tk.Label(root, text="ChatGPT Output:")
+    output_text = HTMLScrolledText(root, height=10)
+
     # Email history
     history_frame = tk.Frame(root)
     history_frame.pack(pady=5)
@@ -186,14 +195,14 @@ def create_main_window(openai_service, config: dict) -> None:
     }
 
     # OpenAI function
-    def call_openai(prompt: str, output_widget: tk.Text, mode: str) -> None:
+    def call_openai(prompt: str, output_widget: HTMLScrolledText, mode: str) -> None:
         try:
             reply = openai_service.generate_response(model_list_var.get(), prompt)
             print("INFO: Saving to local history")
             functions.database.save_to_history(mode, tone_var.get(), prompt, reply)
             output_widget.config(state=tk.NORMAL)
-            output_widget.delete("1.0", tk.END)
-            output_widget.insert(tk.END, reply)
+            output_widget.raw_markdown = reply
+            output_widget.set_html(markdown.markdown(reply))
         except OpenAIError as e:
             messagebox.showerror("OpenAI Error", str(e))
         except Exception as e:
@@ -412,10 +421,8 @@ def create_main_window(openai_service, config: dict) -> None:
     )
     include_email_checkbox.grid(row=0, column=2, pady=5, padx=5)
 
-    output_label = tk.Label(root, text="ChatGPT Output:")
     output_label.pack()
 
-    output_text = scrolledtext.ScrolledText(root, height=10, wrap=tk.WORD)
     output_text.pack(fill=tk.BOTH, padx=6, pady=5, expand=True)
 
     root.mainloop()

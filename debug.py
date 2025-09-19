@@ -1,10 +1,15 @@
 import datetime
-import openai
-import asana
-from asana.rest import ApiException
-from pprint import pprint
-import os
 import json
+import os
+from pprint import pprint
+
+from vendor_setup import ensure_vendor_path
+
+ensure_vendor_path()
+
+import asana
+import openai
+from asana.rest import ApiException
 
 # Load Config
 print("INFO: Loading Config File")
