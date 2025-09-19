@@ -1,4 +1,4 @@
-**Summary**
+## Summary
 
 We use Toggl and Asana for logging jobs. The way we used to do it involved a lot of copying and pasting so I made this software to streamline the process a bit as well as teach myself how the OpenAI API works.
 
@@ -10,6 +10,8 @@ This shit is a mess and probably has a lot of unmaintanable code. Some parts wer
 ## Configuration
 
 Copy `config.example.json` to `config.json` and fill in the required secrets. The Asana integration now reads assignee options, priority field IDs, and any default custom fields directly from this file so you can tailor the app to your workspace without editing Python code.
+
+## Screenshots
 
 **Main Window**
 
