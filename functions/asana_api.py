@@ -1,3 +1,4 @@
+import copy
 import tkinter as tk
 import asana
 from asana.rest import ApiException
@@ -8,7 +9,7 @@ import functions.ui
 
 def send_to_asana(output_text, input_text,
                   asana_workspace, asana_project_id, asana_token,
-                  assignee_var, priority_var, cal_var):
+                  assignee_var, priority_var, cal_var, asana_settings):
     print("INFO: Sending to Asana")
     summary = output_text.get("1.0", tk.END).strip()
     if not summary:
@@ -18,17 +19,20 @@ def send_to_asana(output_text, input_text,
 
     task_name = simpledialog.askstring("Asana Task Name", "Enter the name for the new Asana task:")
     print(f"INFO: Set Task Name: {task_name}")
+    assignee = ""
+    assignee_lookup = {}
+    if isinstance(asana_settings, dict):
+        lookup = asana_settings.get("assignees", {})
+        if isinstance(lookup, dict):
+            assignee_lookup = lookup
     assignee_raw = assignee_var.get()
-    assignee = assignee_raw.lower()
-    if assignee == "tristan":
-        assignee = f"tristan@{asana_workspace}"
-        print(f"INFO: Set Assignee: {assignee}")
-    elif assignee == "kynan":
-        assignee = f"kynan@{asana_workspace}"
+    if isinstance(assignee_raw, str):
+        assignee = assignee_lookup.get(assignee_raw.casefold(), "")
+    if assignee:
         print(f"INFO: Set Assignee: {assignee}")
     else:
         assignee = ""
-        print(f"INFO: Assignee: None Specified")
+        print("INFO: Assignee: None Specified")
 
     if not asana_project_id or not task_name:
         messagebox.showerror("Missing Info", "Task name is required.")
@@ -46,27 +50,47 @@ def send_to_asana(output_text, input_text,
         notes = f"Email: \n{summary_without_tasks}" # Formats description of Asana job
 
         # Get Priority - This section is dependent on your Asana setup. We use tags to assign priority. This field can be edited to suit and tags you wish to assign.
-        priority_mapping = {
-            "None": "1201356624548797",
-            "Low": "1201356624548796",
-            "Medium": "1201356624548795",
-            "High": "1201356624548794",
-            "Today": "1201356624548793",
-            "Urgent": "1201356624548792"
-        }
+        priority_mapping = {}
+        priority_field_id = None
+        custom_fields = {}
+        if isinstance(asana_settings, dict):
+            priority_mapping_candidate = asana_settings.get("priority_options", {})
+            if isinstance(priority_mapping_candidate, dict):
+                priority_mapping = priority_mapping_candidate
+            priority_field_id_candidate = asana_settings.get("priority_field_id")
+            if isinstance(priority_field_id_candidate, str) and priority_field_id_candidate:
+                priority_field_id = priority_field_id_candidate
         priority_selection = priority_var.get()
-        priority_field_id = "1201356624548791"
-        custom_fields = {
-            priority_field_id: priority_mapping.get(priority_selection)
-        }
+        if priority_field_id and isinstance(priority_selection, str) and priority_selection in priority_mapping:
+            custom_fields[priority_field_id] = priority_mapping[priority_selection]
 
-        body = {"data": {
-            "name": task_name, # Job Name
-            "projects": asana_project_id, # Job Project (Business Tasks)
-            "due_on": functions.ui.get_date(cal_var),
-            "notes": notes # Job Description
-        }}
-        body["data"]["custom_fields"] = custom_fields
+        body = {"data": {}}
+        task_defaults = {}
+        if isinstance(asana_settings, dict):
+            defaults_candidate = asana_settings.get("task_defaults", {})
+            if isinstance(defaults_candidate, dict):
+                task_defaults = copy.deepcopy(defaults_candidate)
+        body["data"].update(task_defaults)
+        body["data"].setdefault("projects", asana_project_id) # Job Project (Business Tasks)
+        body["data"]["name"] = task_name # Job Name
+        body["data"]["due_on"] = functions.ui.get_date(cal_var)
+        body["data"]["notes"] = notes # Job Description
+
+        existing_custom_fields = body["data"].get("custom_fields", {})
+        merged_custom_fields = {}
+        if isinstance(existing_custom_fields, dict):
+            merged_custom_fields.update(existing_custom_fields)
+        if isinstance(custom_fields, dict):
+            merged_custom_fields.update(custom_fields)
+        additional_custom_fields = {}
+        if isinstance(asana_settings, dict):
+            additional_candidate = asana_settings.get("custom_fields", {})
+            if isinstance(additional_candidate, dict):
+                additional_custom_fields = additional_candidate
+        if additional_custom_fields:
+            merged_custom_fields.update(additional_custom_fields)
+        if merged_custom_fields:
+            body["data"]["custom_fields"] = merged_custom_fields
         opts = {}
 
         if assignee:

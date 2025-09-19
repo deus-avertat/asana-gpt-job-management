@@ -2,5 +2,22 @@
   "openai_api_key": "",
   "asana_token": "",
   "asana_project_id": "",
-  "asana_workspace": "example.com"
+  "asana_workspace": "example.com",
+  "asana_assignees": [
+    { "name": "Joe", "email": "joe@{workspace}" },
+    { "name": "Biden", "email": "biden@{workspace}" }
+  ],
+  "asana_default_assignee": "Joe",
+  "asana_priority_field_id": "123456789",
+  "asana_priority_options": {
+    "None": null,
+    "Low": "123456789",
+    "Medium": "123456789",
+    "High": "123456789",
+    "Today": "123456789",
+    "Urgent": "123456789"
+  },
+  "asana_default_priority": "None",
+  "asana_custom_fields": {},
+  "asana_task_defaults": {}
 }

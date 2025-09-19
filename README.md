@@ -7,6 +7,10 @@ It also has a seperate window built in to assist with generating job notes to go
 
 This shit is a mess and probably has a lot of unmaintanable code. Some parts were vibe coded using OpenAI's Codex.
 
+## Configuration
+
+Copy `config.example.json` to `config.json` and fill in the required secrets. The Asana integration now reads assignee options, priority field IDs, and any default custom fields directly from this file so you can tailor the app to your workspace without editing Python code.
+
 **Main Window**
 
 <img width="802" height="992" alt="image" src="https://github.com/user-attachments/assets/b93fb5aa-5ed9-47d4-a786-a45b32b68b8a" />
