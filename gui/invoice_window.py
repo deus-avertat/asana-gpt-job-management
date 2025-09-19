@@ -5,7 +5,6 @@ from vendor_setup import ensure_vendor_path
 
 ensure_vendor_path()
 
-import markdown
 from openai import OpenAIError
 from tkhtmlview import HTMLScrolledText
 
@@ -110,9 +109,7 @@ def create_invoice_window(root, openai_service, config, show_main_callback):
     def call_openai(prompt: str, output_widget: HTMLScrolledText) -> None:
         try:
             reply = openai_service.generate_response(model_list_var.get(), prompt)
-            output_widget.config(state=tk.NORMAL)
-            output_widget.raw_markdown = reply
-            output_widget.set_html(markdown.markdown(reply))
+            functions.ui.display_markdown(output_widget, reply)
         except OpenAIError as exc:
             messagebox.showerror("OpenAI Error", str(exc))
         except Exception as exc:  # pragma: no cover - defensive programming

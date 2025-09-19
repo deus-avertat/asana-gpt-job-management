@@ -6,7 +6,6 @@ from vendor_setup import ensure_vendor_path
 
 ensure_vendor_path()
 
-import markdown
 from openai import OpenAIError
 from tkcalendar import DateEntry
 from tkhtmlview import HTMLScrolledText
@@ -200,9 +199,7 @@ def create_main_window(openai_service, config: dict) -> None:
             reply = openai_service.generate_response(model_list_var.get(), prompt)
             print("INFO: Saving to local history")
             functions.database.save_to_history(mode, tone_var.get(), prompt, reply)
-            output_widget.config(state=tk.NORMAL)
-            output_widget.raw_markdown = reply
-            output_widget.set_html(markdown.markdown(reply))
+            functions.ui.display_markdown(output_widget, reply)
         except OpenAIError as e:
             messagebox.showerror("OpenAI Error", str(e))
         except Exception as e:
