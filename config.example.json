@@ -4,18 +4,18 @@
   "asana_project_id": "",
   "asana_workspace": "example.com",
   "asana_assignees": [
-    { "name": "Tristan", "email": "tristan@{workspace}" },
-    { "name": "Kynan", "email": "kynan@{workspace}" }
+    { "name": "Joe", "email": "joe@{workspace}" },
+    { "name": "Biden", "email": "biden@{workspace}" }
   ],
-  "asana_default_assignee": "Tristan",
-  "asana_priority_field_id": "1201356624548791",
+  "asana_default_assignee": "Joe",
+  "asana_priority_field_id": "123456789",
   "asana_priority_options": {
     "None": null,
-    "Low": "1201356624548796",
-    "Medium": "1201356624548795",
-    "High": "1201356624548794",
-    "Today": "1201356624548793",
-    "Urgent": "1201356624548792"
+    "Low": "123456789",
+    "Medium": "123456789",
+    "High": "123456789",
+    "Today": "123456789",
+    "Urgent": "123456789"
   },
   "asana_default_priority": "None",
   "asana_custom_fields": {},
