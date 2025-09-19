@@ -15,6 +15,8 @@ def custom_prompt(input_text,
     if include_email_checkbox_var.get():
         prompt += f"\n\nHere is the message for context:\n{email_text}"
 
+    prompt += "\n\nPlease respond using Markdown formatting."
+
     threading.Thread(target=call_openai, args=(prompt, output_text)).start()
 
 def draft_reply(tone_var,
@@ -27,7 +29,11 @@ def draft_reply(tone_var,
     email_text = input_text.get("1.0", tk.END).strip()
     if not email_text:
         return
-    prompt = f"Draft a {draft_length} {tone.lower()} reply to this email:\n\n{email_text}\n\nDont provide a response, subject or signature, only give the draft reply"
+    prompt = (
+        f"Draft a {draft_length} {tone.lower()} reply to this email:\n\n{email_text}\n\n"
+        "Dont provide a response, subject or signature, only give the draft reply."
+        " Format the reply using Markdown with headings, bullet lists, and emphasis where appropriate."
+    )
     threading.Thread(target=call_openai, args=(prompt, output_text)).start()
 
 def summarize(input_text: str,
@@ -48,7 +54,10 @@ def summarize(input_text: str,
         document_text = extract_text_from_file(attached_file_path)
         print("INFO: Appending attached document content")
 
-    prompt = f"Summarize the following message:\n\n{email_text}"
+    prompt = (
+        f"Summarize the following message:\n\n{email_text}\n\n"
+        "Present the summary as Markdown with clear headings and bullet lists when useful."
+    )
     if document_text:
         prompt += f"\nAlso summarize the following document:\n\n{document_text}"
     if task_checkbox_var.get():
@@ -79,6 +88,7 @@ def draft_invoice_note(input_text: str,
         "[Single sentence summary]\n"
         "[Date in DD/MM/YYYY]\n"
         "[Dotted notes]\n\n"
+        "Respond using Markdown.\n\n"
         f"Invoicing Notes: {job_title}\n"
         f"{input_text}"
     )

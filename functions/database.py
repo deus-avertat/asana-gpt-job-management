@@ -3,6 +3,8 @@ import sqlite3
 from datetime import datetime
 import tkinter as tk
 
+import functions.ui
+
 # Database Path
 DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "history.db"))
 
@@ -54,7 +56,4 @@ def load_history_entry(entry_id, input_text, output_text):
     if row:
         input_text.delete("1.0", tk.END)
         input_text.insert(tk.END, row[0])
-        output_text.config(state="normal")
-        output_text.delete("1.0", tk.END)
-        output_text.insert(tk.END, row[1])
-        output_text.config(state="normal")
+        functions.ui.display_markdown(output_text, row[1] or "")

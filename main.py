@@ -1,6 +1,10 @@
 import json
 import os
 
+from vendor_setup import ensure_vendor_path
+
+ensure_vendor_path()
+
 from gui.main_window import create_main_window
 from services.openai_service import OpenAIService
 
