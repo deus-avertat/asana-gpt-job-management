@@ -3,4 +3,3 @@ config.json
 /dist/
 /build/
 /history.db
-/summarize_and_draft.spec
