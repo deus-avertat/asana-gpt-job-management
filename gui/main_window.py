@@ -34,7 +34,7 @@ def create_main_window(openai_service, config: dict) -> None:
     root.title("ChatGPT Email Assistant")
     root.geometry("800x960")
 
-    default_model = config.get("default_model", "gpt-4.0")
+    default_model = config.get("default_model", "gpt-4")
 
     # Shared model selection across windows
     model_list_var = tk.StringVar(value=default_model)
@@ -43,6 +43,7 @@ def create_main_window(openai_service, config: dict) -> None:
     invoice_window = None
 
     def show_main() -> None:
+        print("INFO: Switching to Main Window")
         if invoice_window is not None:
             invoice_window.withdraw()
         root.deiconify()
@@ -83,25 +84,29 @@ def create_main_window(openai_service, config: dict) -> None:
     button_frame_left_top = tk.Frame(button_frame_left, bd=1, relief="groove", pady=5)
     button_frame_left_top.pack(pady=5)
     button_frame_left_bottom = tk.Frame(button_frame_left, bd=1, relief="groove", pady=5)
-    button_frame_left_bottom.pack(pady=5)
+    button_frame_left_bottom.pack(pady=10)
 
     button_frame_right = tk.Frame(button_frame_main)
     button_frame_right.grid(column=1, row=0, padx=10)
     button_frame_right_top = tk.Frame(button_frame_right, bd=1, relief="groove", pady=5)
     button_frame_right_top.pack(pady=5)
     button_frame_right_bottom = tk.Frame(button_frame_right, bd=1, relief="groove", pady=5)
-    button_frame_right_bottom.pack(pady=5)
+    button_frame_right_bottom.pack(pady=10)
+
+    model_list_label = tk.Label(button_frame_right_top, text="Select GPT Model")
+    model_list_label.config(font=("Segoe UI", 9, "bold"))
+    model_list_label.grid(row=0, column=0, padx=5)
 
     model_list = ttk.OptionMenu(
         button_frame_right_top,
         model_list_var,
         default_model,
-        "gpt-4.0",
+        "gpt-4",
         "gpt-4.1",
         "gpt-5",
         "o4-mini",
     )
-    model_list.grid(row=0, column=0, padx=5)
+    model_list.grid(row=1, column=0, padx=5)
 
     # Variables for ChatGPT output
     tone_var = tk.StringVar(value="Professional")
@@ -115,7 +120,7 @@ def create_main_window(openai_service, config: dict) -> None:
     # OpenAI function
     def call_openai(prompt: str, output_widget: tk.Text, mode: str) -> None:
         try:
-            reply = openai_service.generate_response(model_list_var, prompt)
+            reply = openai_service.generate_response(model_list_var.get(), prompt)
             print("INFO: Saving to local history")
             functions.database.save_to_history(mode, tone_var.get(), prompt, reply)
             output_widget.config(state=tk.NORMAL)
@@ -145,6 +150,7 @@ def create_main_window(openai_service, config: dict) -> None:
             print(f"INFO: Attached file: {file_path}")
 
     def show_invoice_window() -> None:
+        print("INFO: Switching to Invoice Window")
         root.withdraw()
         invoice_window.deiconify()
         invoice_window.lift()
@@ -154,7 +160,8 @@ def create_main_window(openai_service, config: dict) -> None:
         button_frame_left_top,
         text="Summarise",
         command=lambda: functions.gpt.summarize(
-            input_text,
+            input_text.get("1.0", tk.END).strip(),
+            model_list_var.get(),
             output_text,
             attached_file_checkbox_var,
             attached_file_path,
@@ -210,8 +217,8 @@ def create_main_window(openai_service, config: dict) -> None:
     asana_button.grid(row=1, column=1, padx=5)
 
     invoice_button = tk.Button(
-        button_frame_left_bottom,
-        text="Invoice Notes",
+        button_frame_right_bottom,
+        text="Switch to Invoicing Notes",
         command=show_invoice_window,
     )
     invoice_button.grid(row=0, column=0, columnspan=2, padx=5, pady=(0, 5), sticky="ew")

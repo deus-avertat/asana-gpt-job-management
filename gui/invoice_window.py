@@ -19,40 +19,27 @@ def create_invoice_window(root, openai_service, config, show_main_callback):
         window_title = f"{window_title} – {workspace}"
     invoice_window.title(window_title)
     invoice_window.geometry("800x960")
-    invoice_window.transient(root)
 
     # Ensure closing the window returns the user to the main assistant
     invoice_window.protocol("WM_DELETE_WINDOW", show_main_callback)
 
-    model_list_var = getattr(root, "shared_model_var", tk.StringVar(master=root, value="gpt-4.0"))
+    model_list_var = getattr(root, "shared_model_var", tk.StringVar(master=root, value="gpt-4"))
+
+    # Job Title
+    job_title_label = tk.Label(invoice_window, text="Enter Job Title:")
+    job_title_label.pack()
+
+    job_title = tk.Entry(invoice_window)
+    job_title.pack(fill="x", padx=45, pady=5)
 
     # Invoice Input
     input_label = tk.Label(invoice_window, text="Paste Invoice Details Here:")
     input_label.pack()
 
-    input_text = scrolledtext.ScrolledText(invoice_window, height=10, wrap=tk.WORD)
+    input_text = scrolledtext.ScrolledText(invoice_window, height=4, wrap=tk.WORD)
     input_text.pack(fill=tk.BOTH, padx=6, pady=5, expand=True)
 
-    # Invoice history
-    history_frame = tk.Frame(invoice_window)
-    history_frame.pack(pady=5)
-
-    history_list = tk.Menubutton(history_frame, text="Load History", relief="groove")
-    history_list.menu = tk.Menu(history_list, tearoff=0)
-    history_list["menu"] = history_list.menu
-    history_list.pack(side="left")
-
-    output_text = scrolledtext.ScrolledText(invoice_window, height=10, wrap=tk.WORD)
-
-    def refresh_history() -> None:
-        functions.database.load_history(history_list, input_text, output_text)
-
-    refresh_button = tk.Button(
-        history_frame,
-        text="↻",
-        command=refresh_history,
-    )
-    refresh_button.pack(side="left", padx=5)
+    output_text = scrolledtext.ScrolledText(invoice_window, height=5, wrap=tk.WORD)
 
     button_frame_main = tk.Frame(invoice_window)
     button_frame_main.pack()
@@ -71,74 +58,53 @@ def create_invoice_window(root, openai_service, config, show_main_callback):
     button_frame_right_bottom = tk.Frame(button_frame_right, bd=1, relief="groove", pady=5)
     button_frame_right_bottom.pack(pady=5)
 
-    model_label = tk.Label(button_frame_right_top, text="Model")
-    model_label.grid(row=0, column=0, padx=5)
-    model_list = ttk.OptionMenu(button_frame_right_top, model_list_var, model_list_var.get(), "gpt-4.0", "gpt-4.1", "gpt-5", "o4-mini")
-    model_list.grid(row=0, column=1, padx=5)
+    model_list_label = tk.Label(button_frame_right_top, text="Select GPT Model")
+    model_list_label.config(font=("Segoe UI", 9, "bold"))
+    model_list_label.grid(row=0, column=0, padx=5)
 
-    note_style_var = tk.StringVar(value="Concise")
-    note_style_label = tk.Label(button_frame_right_bottom, text="Invoice Note Style:")
-    note_style_label.grid(row=0, column=0, padx=5)
-    note_style_menu = ttk.OptionMenu(
-        button_frame_right_bottom,
-        note_style_var,
-        "Concise",
-        "Concise",
-        "Detailed",
-        "Bullet point",
-    )
-    note_style_menu.grid(row=0, column=1, padx=5)
+    model_list = ttk.OptionMenu(button_frame_right_top, model_list_var, model_list_var.get(),
+                                "gpt-4",
+                                "gpt-4.1",
+                                "gpt-5",
+                                "o4-mini")
+    model_list.grid(row=1, column=0, padx=5)
 
-    include_document_var = tk.BooleanVar()
-    include_tasks_var = tk.BooleanVar()
-    include_followup_var = tk.BooleanVar()
+    # note_style_var = tk.StringVar(value="Concise")
+    # note_style_label = tk.Label(button_frame_right_bottom, text="Invoice Note Style:")
+    # note_style_label.grid(row=0, column=0, padx=5)
+    # note_style_menu = ttk.OptionMenu(
+    #     button_frame_right_bottom,
+    #     note_style_var,
+    #     "Concise",
+    #     "Concise",
+    #     "Detailed",
+    #     "Bullet point",
+    # )
+    # note_style_menu.grid(row=0, column=1, padx=5)
 
     checkbox_frame = tk.Frame(button_frame_right)
     checkbox_frame.pack(pady=5)
 
-    include_document_checkbox = tk.Checkbutton(
-        checkbox_frame,
-        text="Summarise attached document?",
-        variable=include_document_var,
-    )
-    include_document_checkbox.grid(row=0, column=0, padx=5, sticky="w")
+    # prompt_frame = tk.Frame(invoice_window, bd=1, relief="groove")
+    # prompt_frame.pack(fill="x", padx=100, pady=5)
 
-    include_tasks_checkbox = tk.Checkbutton(
-        checkbox_frame,
-        text="Highlight outstanding invoice actions?",
-        variable=include_tasks_var,
-    )
-    include_tasks_checkbox.grid(row=1, column=0, padx=5, sticky="w")
+    # prompt_label = tk.Label(prompt_frame, text="Custom Invoice Prompt:")
+    # prompt_label.config(font=("Segoe UI", 9, "bold"))
+    # prompt_label.pack()
 
-    include_followup_checkbox = tk.Checkbutton(
-        checkbox_frame,
-        text="Include payment follow-up suggestions?",
-        variable=include_followup_var,
-    )
-    include_followup_checkbox.grid(row=2, column=0, padx=5, sticky="w")
+    # prompt_entry = tk.Entry(prompt_frame)
+    # prompt_entry.pack(fill="x", padx=5, pady=5)
 
-    prompt_frame = tk.Frame(invoice_window, bd=1, relief="groove")
-    prompt_frame.pack(fill="x", padx=100, pady=5)
+    # prompt_button_frame = tk.Frame(prompt_frame)
+    # prompt_button_frame.pack()
 
-    prompt_label = tk.Label(prompt_frame, text="Custom Invoice Prompt:")
-    prompt_label.config(font=("Segoe UI", 9, "bold"))
-    prompt_label.pack()
-
-    prompt_entry = tk.Entry(prompt_frame)
-    prompt_entry.pack(fill="x", padx=5, pady=5)
-
-    prompt_button_frame = tk.Frame(prompt_frame)
-    prompt_button_frame.pack()
-
-    include_invoice_checkbox_var = tk.BooleanVar()
+    # include_invoice_checkbox_var = tk.BooleanVar()
 
     attached_file_path = None
 
-    def call_openai(prompt: str, output_widget: tk.Text, mode: str, tone: str = "") -> None:
+    def call_openai(prompt: str, output_widget: tk.Text) -> None:
         try:
-            reply = openai_service.generate_response(model_list_var, prompt)
-            print("INFO: Saving to local history")
-            functions.database.save_to_history(mode, tone, prompt, reply)
+            reply = openai_service.generate_response(model_list_var.get(), prompt)
             output_widget.config(state=tk.NORMAL)
             output_widget.delete("1.0", tk.END)
             output_widget.insert(tk.END, reply)
@@ -147,71 +113,31 @@ def create_invoice_window(root, openai_service, config, show_main_callback):
         except Exception as exc:  # pragma: no cover - defensive programming
             messagebox.showerror("Error", str(exc))
 
-    def attach_file() -> None:
-        nonlocal attached_file_path
-        file_path = filedialog.askopenfilename(
-            title="Select a file to attach",
-            filetypes=[
-                ("Text files", "*.txt"),
-                ("PDF files", "*.pdf"),
-                ("Word files", "*.docx"),
-                ("All files", "*.*"),
-            ],
-        )
-        if file_path:
-            attached_file_path = file_path
-            print(f"INFO: Attached file: {file_path}")
-
-    summarize_button = tk.Button(
+    create_notes_button = tk.Button(
         button_frame_left_top,
         text="Summarise Invoice",
-        command=lambda: functions.gpt.summarize(
-            input_text,
-            output_text,
-            include_document_var,
-            attached_file_path,
-            extract_text_from_file,
-            include_tasks_var,
-            include_followup_var,
-            lambda prompt, widget: call_openai(prompt, widget, "invoice-summarize", note_style_var.get()),
-        ),
-    )
-    summarize_button.grid(row=0, column=0, padx=5)
-
-    draft_button = tk.Button(
-        button_frame_left_top,
-        text="Generate Invoice Note",
         command=lambda: functions.gpt.draft_invoice_note(
-            note_style_var,
-            input_text,
+            input_text.get("1.0", tk.END).strip(),
+            job_title.get(),
             output_text,
-            lambda prompt, widget: call_openai(prompt, widget, "invoice-note", note_style_var.get()),
+            model_list_var.get(),
+            lambda prompt, widget: call_openai(prompt, widget),
         ),
     )
-    draft_button.grid(row=0, column=1, padx=5)
+    create_notes_button.grid(row=0, column=0, padx=5)
 
-    attach_button = tk.Button(button_frame_left_top, text="Attach Document", command=attach_file)
-    attach_button.grid(row=0, column=2, padx=5)
-
-    prompt_button = tk.Button(
-        prompt_button_frame,
-        text="Run Custom Prompt",
-        command=lambda: functions.gpt.custom_prompt(
-            input_text,
-            prompt_entry,
-            include_invoice_checkbox_var,
-            lambda prompt, widget: call_openai(prompt, widget, "invoice-custom", note_style_var.get()),
-            output_text,
-        ),
-    )
-    prompt_button.grid(row=0, column=0, pady=5, padx=5)
-
-    include_invoice_checkbox = tk.Checkbutton(
-        prompt_button_frame,
-        text="Include invoice details for context?",
-        variable=include_invoice_checkbox_var,
-    )
-    include_invoice_checkbox.grid(row=0, column=1, pady=5, padx=5)
+    # prompt_button = tk.Button(
+    #     prompt_button_frame,
+    #     text="Run Custom Prompt",
+    #     command=lambda: functions.gpt.custom_prompt(
+    #         input_text,
+    #         prompt_entry,
+    #         include_invoice_checkbox_var,
+    #         lambda prompt, widget: call_openai(prompt, widget, "invoice-custom", note_style_var.get()),
+    #         output_text,
+    #     ),
+    # )
+    # prompt_button.grid(row=0, column=0, pady=5, padx=5)
 
     copy_button = tk.Button(
         button_frame_left_bottom,

@@ -30,7 +30,8 @@ def draft_reply(tone_var,
     prompt = f"Draft a {draft_length} {tone.lower()} reply to this email:\n\n{email_text}\n\nDont provide a response, subject or signature, only give the draft reply"
     threading.Thread(target=call_openai, args=(prompt, output_text)).start()
 
-def summarize(input_text,
+def summarize(input_text: str,
+              model: str,
               output_text,
               attached_file_checkbox_var,
               attached_file_path,
@@ -38,8 +39,8 @@ def summarize(input_text,
               task_checkbox_var,
               fixes_checkbox_var,
               call_openai):
-    print("INFO: Summarizing Email")
-    email_text = input_text.get("1.0", tk.END).strip()
+    print(f"INFO: Summarizing Email using {model}")
+    email_text = input_text
     if not email_text:
         return
     document_text = ""
@@ -57,23 +58,28 @@ def summarize(input_text,
     threading.Thread(target=call_openai, args=(prompt, output_text)).start()
 
 
-def draft_invoice_note(note_style_var,
-                       input_text,
+def draft_invoice_note(input_text: str,
+                       job_title: str,
                        output_text,
+                       model: str,
                        call_openai):
     """Generate a GPT prompt tailored for writing invoice notes."""
 
-    note_style = note_style_var.get()
-    print(f"INFO: Drafting a {note_style.lower()} invoice note")
-    invoice_text = input_text.get("1.0", tk.END).strip()
-    if not invoice_text:
+    print(f"INFO: Drafting an invoice note using {model}")
+    # invoice_text = input_text.get("1.0", tk.END).strip()
+    if not input_text:
         return
 
     prompt = (
-        "Create an invoice note summarising the critical billing details, "
-        "outstanding actions, and follow-up requirements from the following "
-        f"information. Write the note in a {note_style.lower()} tone that can be "
-        "pasted directly into the client's invoice record.\n\n"
-        f"{invoice_text}"
+        "You will be provided with job notes to be invoiced, and your task is to summarize the job as follows:\n"
+        " -Single sentence summary of the job.\n"
+        " -Dated and dot point list of what was done on the job.\n\n"
+        "Notes should be formatted like so:\n"
+        "Invoicing notes: **[Job name]**\n"
+        "[Single sentence summary]\n"
+        "[Date in DD/MM/YYYY]\n"
+        "[Dotted notes]\n\n"
+        f"Invoicing Notes: {job_title}\n"
+        f"{input_text}"
     )
     threading.Thread(target=call_openai, args=(prompt, output_text)).start()
