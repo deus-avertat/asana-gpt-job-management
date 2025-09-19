@@ -6,4 +6,5 @@ This shit is a mess, i will eventually separate it out into individual modules r
 
 **Invoicing Window**
 
-<img width="802" height="992" alt="image" src="https://github.com/user-attachments/assets/71c03d36-6584-4681-975b-c68c85d5b13a" />
+<img width="802" height="992" alt="image" src="https://github.com/user-attachments/assets/2da455d0-2d4d-4bde-ab2d-16dd76a6f01f" />
+
