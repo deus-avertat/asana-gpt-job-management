@@ -20,6 +20,74 @@ def create_main_window(openai_service, config: dict) -> None:
     asana_project_id = config["asana_project_id"]
     asana_workspace = config["asana_workspace"]
 
+    # Build configurable Asana metadata -------------------------------------
+    assignee_options_raw = config.get("asana_assignees", [])
+    assignee_choices = []
+    assignee_lookup = {}
+    if isinstance(assignee_options_raw, list):
+        for entry in assignee_options_raw:
+            if not isinstance(entry, dict):
+                continue
+            name = entry.get("name")
+            if not isinstance(name, str) or not name:
+                continue
+            raw_value = (
+                entry.get("gid")
+                or entry.get("email")
+                or entry.get("value")
+                or ""
+            )
+            if isinstance(raw_value, str):
+                value = raw_value.replace("{workspace}", asana_workspace)
+            else:
+                value = ""
+            assignee_choices.append(name)
+            assignee_lookup[name.casefold()] = value
+    if not assignee_choices:
+        assignee_choices = ["Unassigned"]
+    if not any(choice.casefold() == "unassigned" for choice in assignee_choices):
+        assignee_choices.append("Unassigned")
+    assignee_lookup.setdefault("unassigned", "")
+    assignee_choices = list(dict.fromkeys(assignee_choices))
+    default_assignee = config.get("asana_default_assignee")
+    if not isinstance(default_assignee, str) or default_assignee not in assignee_choices:
+        default_assignee = assignee_choices[0]
+
+    priority_options_raw = config.get("asana_priority_options")
+    priority_mapping = {}
+    if isinstance(priority_options_raw, dict):
+        for label, value in priority_options_raw.items():
+            if isinstance(label, str):
+                priority_mapping[label] = value
+    priority_field_id = config.get("asana_priority_field_id")
+    if not isinstance(priority_field_id, str) or not priority_field_id.strip():
+        priority_field_id = None
+    default_priority = config.get("asana_default_priority")
+    if priority_mapping:
+        if not isinstance(default_priority, str) or default_priority not in priority_mapping:
+            default_priority = next(iter(priority_mapping))
+        priority_choices = list(priority_mapping.keys())
+    else:
+        if not isinstance(default_priority, str) or not default_priority:
+            default_priority = "None"
+        priority_choices = [default_priority]
+
+    additional_custom_fields = config.get("asana_custom_fields")
+    if not isinstance(additional_custom_fields, dict):
+        additional_custom_fields = {}
+
+    task_defaults = config.get("asana_task_defaults")
+    if not isinstance(task_defaults, dict):
+        task_defaults = {}
+
+    asana_settings = {
+        "assignees": assignee_lookup,
+        "priority_field_id": priority_field_id,
+        "priority_options": priority_mapping,
+        "custom_fields": additional_custom_fields,
+        "task_defaults": task_defaults,
+    }
+
     print("INFO: Initialising History Database")
     functions.database.init_history_db()
 
@@ -212,6 +280,7 @@ def create_main_window(openai_service, config: dict) -> None:
             assignee_var,
             priority_var,
             cal_var,
+            asana_settings,
         ),
     )
     asana_button.grid(row=1, column=1, padx=5)
@@ -277,8 +346,14 @@ def create_main_window(openai_service, config: dict) -> None:
     assignee_label.config(font=("Segoe UI", 9, "bold"))
     assignee_label.grid(row=0, column=0, padx=5)
 
-    assignee_var = tk.StringVar(value="Tristan")
-    assignee_menu = ttk.OptionMenu(assignee_frame, assignee_var, "Tristan", "Tristan", "Kynan")
+    assignee_var = tk.StringVar(value=default_assignee)
+    assignee_menu_choices = [default_assignee] + [choice for choice in assignee_choices if choice != default_assignee]
+    assignee_menu = ttk.OptionMenu(
+        assignee_frame,
+        assignee_var,
+        default_assignee,
+        *assignee_menu_choices,
+    )
     assignee_menu.grid(row=1, column=0, padx=5)
 
     cal_label = tk.Label(assignee_frame, text="Due Date")
@@ -292,9 +367,13 @@ def create_main_window(openai_service, config: dict) -> None:
     priority_label.config(font=("Segoe UI", 9, "bold"))
     priority_label.grid(row=2, column=0, padx=5)
 
-    priority_var = tk.StringVar(value="")
+    priority_var = tk.StringVar(value=default_priority)
+    priority_menu_choices = [default_priority] + [choice for choice in priority_choices if choice != default_priority]
     priority_menu = ttk.OptionMenu(
-        assignee_frame, priority_var, "None", "Low", "Medium", "High", "Today", "Urgent"
+        assignee_frame,
+        priority_var,
+        default_priority,
+        *priority_menu_choices,
     )
     priority_menu.grid(row=3, column=0, padx=5)
 
