@@ -79,7 +79,7 @@ class _HTMLRenderer(HTMLParser):
 
     def handle_endtag(self, tag: str) -> None:
         if tag in {"p", "div"}:
-            self._queue_newlines(1)
+            self._queue_newlines(2)
         elif tag in {"h1", "h2", "h3", "h4", "h5", "h6"}:
             self._pop_inline_tag(tag)
             self._queue_newlines(2)
@@ -88,11 +88,11 @@ class _HTMLRenderer(HTMLParser):
         elif tag == "ul":
             if self.list_stack:
                 self.list_stack.pop()
-            self._queue_newlines(1)
+            self._queue_newlines(2)
         elif tag == "ol":
             if self.list_stack:
                 self.list_stack.pop()
-            self._queue_newlines(1)
+            self._queue_newlines(2)
         elif tag in {"strong", "b"}:
             self._pop_inline_tag("bold")
         elif tag in {"em", "i"}:
@@ -106,7 +106,7 @@ class _HTMLRenderer(HTMLParser):
             self._flush_newlines()
 
     def handle_data(self, data: str) -> None:
-        if not data:
+        if not data or data.isspace():
             return
         self._flush_newlines()
         tags = tuple(self.inline_tags)

@@ -129,13 +129,17 @@ class _PlainTextExtractor(HTMLParser):
         # Prevent runaway blank lines by ensuring at most two consecutive ones.
         trailing = 0
         for chunk in reversed(self._parts):
+            if not chunk:
+                continue
             if chunk.endswith("\n"):
-                trailing += chunk.count("\n")
+                trailing += len(chunk) - len(chunk.rstrip("\n"))
                 if trailing >= count:
-                    return
+                    break
             else:
                 break
-        self._parts.append("\n" * count)
+        missing = count - trailing
+        if missing > 0:
+            self._parts.append("\n" * missing)
 
     # -- HTMLParser API --------------------------------------------------
     def handle_starttag(self, tag: str, attrs: List[tuple[str, str | None]]) -> None:
@@ -158,15 +162,19 @@ class _PlainTextExtractor(HTMLParser):
                     self._parts.append(f"{current['index']}. ")
 
     def handle_endtag(self, tag: str) -> None:
-        if tag in {"p", "div", "li", "h1", "h2", "h3", "h4", "h5", "h6"}:
+        if tag in {"p", "div"}:
+            self._append_newline(2)
+        elif tag in {"h1", "h2", "h3", "h4", "h5", "h6"}:
+            self._append_newline(2)
+        elif tag == "li":
             self._append_newline()
         elif tag in {"ul", "ol"}:
             if self._list_stack:
                 self._list_stack.pop()
-            self._append_newline()
+            self._append_newline(2)
 
     def handle_data(self, data: str) -> None:
-        if data:
+        if data and not data.isspace():
             self._parts.append(data)
 
     # -- Public API ------------------------------------------------------
