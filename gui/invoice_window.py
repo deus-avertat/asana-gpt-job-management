@@ -1,7 +1,12 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox, scrolledtext, ttk
+from tkinter import messagebox, scrolledtext, ttk
+
+from vendor_setup import ensure_vendor_path
+
+ensure_vendor_path()
 
 from openai import OpenAIError
+from tkhtmlview import HTMLScrolledText
 
 import functions.database
 import functions.gpt
@@ -39,7 +44,8 @@ def create_invoice_window(root, openai_service, config, show_main_callback):
     input_text = scrolledtext.ScrolledText(invoice_window, height=4, wrap=tk.WORD)
     input_text.pack(fill=tk.BOTH, padx=6, pady=5, expand=True)
 
-    output_text = scrolledtext.ScrolledText(invoice_window, height=5, wrap=tk.WORD)
+    output_label = tk.Label(invoice_window, text="Invoice Assistant Output:")
+    output_text = HTMLScrolledText(invoice_window, height=5)
 
     button_frame_main = tk.Frame(invoice_window)
     button_frame_main.pack()
@@ -100,14 +106,10 @@ def create_invoice_window(root, openai_service, config, show_main_callback):
 
     # include_invoice_checkbox_var = tk.BooleanVar()
 
-    attached_file_path = None
-
-    def call_openai(prompt: str, output_widget: tk.Text) -> None:
+    def call_openai(prompt: str, output_widget: HTMLScrolledText) -> None:
         try:
             reply = openai_service.generate_response(model_list_var.get(), prompt)
-            output_widget.config(state=tk.NORMAL)
-            output_widget.delete("1.0", tk.END)
-            output_widget.insert(tk.END, reply)
+            functions.ui.display_markdown(output_widget, reply)
         except OpenAIError as exc:
             messagebox.showerror("OpenAI Error", str(exc))
         except Exception as exc:  # pragma: no cover - defensive programming
@@ -153,7 +155,6 @@ def create_invoice_window(root, openai_service, config, show_main_callback):
     )
     back_button.grid(row=0, column=1, padx=5)
 
-    output_label = tk.Label(invoice_window, text="Invoice Assistant Output:")
     output_label.pack()
 
     output_text.pack(fill=tk.BOTH, padx=6, pady=5, expand=True)

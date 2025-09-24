@@ -1,9 +1,10 @@
 import copy
+import re
 import tkinter as tk
+from tkinter import messagebox, simpledialog
+
 import asana
 from asana.rest import ApiException
-import re
-from tkinter import messagebox, simpledialog
 
 import functions.ui
 
@@ -11,8 +12,9 @@ def send_to_asana(output_text, input_text,
                   asana_workspace, asana_project_id, asana_token,
                   assignee_var, priority_var, cal_var, asana_settings):
     print("INFO: Sending to Asana")
-    summary = output_text.get("1.0", tk.END).strip()
-    if not summary:
+    summary_markdown = functions.ui.get_widget_markdown(output_text)
+    summary_plain = functions.ui.markdown_to_plain_text(summary_markdown)
+    if not summary_plain:
         messagebox.showwarning("Empty", "There is no summary to send.")
         print(f"WARN: There is no summary to send.")
         return
@@ -46,7 +48,7 @@ def send_to_asana(output_text, input_text,
         tasks_api = asana.TasksApi(api_client) # Opens an Asana Task API client
         # email_text = input_text.get("1.0", tk.END).strip()
         bullet_point_pattern = r"(?:^[-*]\s+|^\d+\.\s+).+" # Finds bullet points in summary
-        summary_without_tasks = re.sub(bullet_point_pattern, "", summary, flags=re.MULTILINE).strip() # Strips bullet point tasks from summary
+        summary_without_tasks = re.sub(bullet_point_pattern, "", summary_plain, flags=re.MULTILINE).strip() # Strips bullet point tasks from summary
         notes = f"Email: \n{summary_without_tasks}" # Formats description of Asana job
 
         # Get Priority - This section is dependent on your Asana setup. We use tags to assign priority. This field can be edited to suit and tags you wish to assign.
@@ -113,7 +115,7 @@ def send_to_asana(output_text, input_text,
         stories_api.create_story_for_task(comment_body, task_gid, opts)
 
         # Convert tasks provided by ChatGPT into subtasks for the job
-        bullet_points = re.findall(r"(?:^[-*]\s+|^\d+\.\s+)(.+)", summary, re.MULTILINE)
+        bullet_points = re.findall(r"(?:^[-*]\s+|^\d+\.\s+)(.+)", summary_plain, re.MULTILINE)
         for point in bullet_points:
             subtask_body = {"data": {"name": point.strip(), "parent": task_gid}}
             tasks_api.create_task(subtask_body, {})

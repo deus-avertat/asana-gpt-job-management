@@ -11,6 +11,15 @@ This shit is a mess and probably has a lot of unmaintanable code. Some parts wer
 
 Copy `config.example.json` to `config.json` and fill in the required secrets. The Asana integration now reads assignee options, priority field IDs, and any default custom fields directly from this file so you can tailor the app to your workspace without editing Python code.
 
+## Vendored dependencies
+
+The project vendors lightweight, offline-friendly replacements for the Markdown renderer and HTML display widget the UI relies on:
+
+* `markdown` – provides `markdown.markdown()` and `markdown.to_plain_text()` for turning model responses into HTML or plain text.
+* `tkhtmlview` – exposes `HTMLScrolledText`, a `tkinter` widget capable of displaying the rendered HTML output.
+
+Both packages live under the `vendor/` directory and are automatically added to `sys.path` at runtime.
+
 ## Screenshots
 
 **Main Window**
