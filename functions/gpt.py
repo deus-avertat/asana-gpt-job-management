@@ -57,12 +57,11 @@ def summarize(input_text: str,
         f"Summarize the following message:\n\n{email_text}\n\n"
         "Present the summary as Markdown with clear headings and bullet lists when useful.\n"
         " -Markdown should not use <p>, <div> or headers. Only bold, italics, dot points, and new lines\n"
-        " -Do not use new lines unless completely necessary."
     )
     if document_text:
         prompt += f"\nAlso summarize the following document:\n\n{document_text}"
     if task_checkbox_var.get():
-        prompt += "\n\nAlso generate a list of tasks in reverse order to be done based on the message."
+        prompt += "\n\nAlso generate a numbered list of tasks in reverse order to be done based on the message."
     if fixes_checkbox_var.get():
         prompt += "\n\nAlso provide a possible fix to the issue mentioned"
     call_openai(prompt, output_text)

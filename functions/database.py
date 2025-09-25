@@ -10,17 +10,16 @@ DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "history
 
 # History Database
 def init_history_db():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp TEXT,
-            mode TEXT,
-            tone TEXT,
-            input TEXT,
-            output TEXT
-        )
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT,
+                mode TEXT,
+                tone TEXT,
+                input TEXT,
+                output TEXT
+            )
     ''')
 
 def save_to_history(mode, tone, email_text, response):
@@ -35,7 +34,7 @@ def save_to_history(mode, tone, email_text, response):
     conn.close()
 
 def load_history(history_list, input_text, output_text):
-    conn = sqlite3.connect("history.db")
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT id, timestamp FROM history ORDER BY id DESC LIMIT 10")
     entries = c.fetchall()
@@ -49,7 +48,7 @@ def load_history(history_list, input_text, output_text):
         )
 
 def load_history_entry(entry_id, input_text, output_text):
-    conn = sqlite3.connect("history.db")
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT input, output FROM history WHERE id=?", (entry_id,))
     row = c.fetchone()

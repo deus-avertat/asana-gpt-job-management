@@ -91,7 +91,40 @@ def build_asana_task_request(
         if isinstance(defaults_candidate, dict):
             task_defaults = copy.deepcopy(defaults_candidate)
     body["data"].update(task_defaults)
-    body["data"].setdefault("projects", asana_project_id)
+    # body["data"].setdefault("projects", asana_project_id)
+
+    projects_value = body["data"].get("projects")
+    normalized_projects: list[str] = []
+
+    def add_project_id(value) -> None:
+        """Collect a project gid from the various shapes Asana accepts."""
+
+        if isinstance(value, str):
+            project_id = value.strip()
+            if project_id and project_id not in normalized_projects:
+                normalized_projects.append(project_id)
+        elif isinstance(value, dict):
+            gid = value.get("gid")
+            if isinstance(gid, str):
+                add_project_id(gid)
+
+    if isinstance(projects_value, (list, tuple, set)):
+        for candidate in projects_value:
+            add_project_id(candidate)
+    else:
+        add_project_id(projects_value)
+
+    if isinstance(asana_project_id, (list, tuple, set)):
+        for candidate in asana_project_id:
+            add_project_id(candidate)
+    else:
+        add_project_id(asana_project_id)
+
+    if normalized_projects:
+        body["data"]["projects"] = normalized_projects
+    elif "projects" in body["data"]:
+        body["data"].pop("projects")
+
     body["data"]["name"] = task_name
     body["data"]["due_on"] = functions.ui.get_date(cal_var)
     body["data"]["notes"] = notes
