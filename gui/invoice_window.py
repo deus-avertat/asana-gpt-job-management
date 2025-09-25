@@ -1,3 +1,4 @@
+import threading
 import tkinter as tk
 from tkinter import messagebox, scrolledtext, ttk
 
@@ -106,14 +107,25 @@ def create_invoice_window(root, openai_service, config, show_main_callback):
 
     # include_invoice_checkbox_var = tk.BooleanVar()
 
+    run_with_loading = getattr(root, "run_with_loading", None)
+
     def call_openai(prompt: str, output_widget: HTMLScrolledText) -> None:
-        try:
-            reply = openai_service.generate_response(model_list_var.get(), prompt)
-            functions.ui.display_markdown(output_widget, reply)
-        except OpenAIError as exc:
-            messagebox.showerror("OpenAI Error", str(exc))
-        except Exception as exc:  # pragma: no cover - defensive programming
-            messagebox.showerror("Error", str(exc))
+        def worker() -> None:
+            try:
+                reply = openai_service.generate_response(model_list_var.get(), prompt)
+            except OpenAIError as exc:
+                root.after(0, lambda: messagebox.showerror("OpenAI Error", str(exc)))
+                return
+            except Exception as exc:  # pragma: no cover - defensive programming
+                root.after(0, lambda: messagebox.showerror("Error", str(exc)))
+                return
+
+            root.after(0, lambda: functions.ui.display_markdown(output_widget, reply))
+
+        if callable(run_with_loading):
+            run_with_loading("Generating response…", worker)
+        else:  # pragma: no cover - fallback for unexpected embedding contexts
+            threading.Thread(target=worker, daemon=True).start()
 
     create_notes_button = tk.Button(
         button_frame_left_top,

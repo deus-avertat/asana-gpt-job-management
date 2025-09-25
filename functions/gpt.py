@@ -1,5 +1,4 @@
 import tkinter as tk
-import threading
 
 
 # Custom GPT Prompt
@@ -17,7 +16,7 @@ def custom_prompt(input_text,
 
     prompt += "\n\nPlease respond using Markdown formatting."
 
-    threading.Thread(target=call_openai, args=(prompt, output_text)).start()
+    call_openai(prompt, output_text)
 
 def draft_reply(tone_var,
                 draft_length,
@@ -34,7 +33,7 @@ def draft_reply(tone_var,
         "Dont provide a response, subject or signature, only give the draft reply."
         " Format the reply using Markdown with headings, bullet lists, and emphasis where appropriate."
     )
-    threading.Thread(target=call_openai, args=(prompt, output_text)).start()
+    call_openai(prompt, output_text)
 
 def summarize(input_text: str,
               model: str,
@@ -66,7 +65,7 @@ def summarize(input_text: str,
         prompt += "\n\nAlso generate a list of tasks in reverse order to be done based on the message."
     if fixes_checkbox_var.get():
         prompt += "\n\nAlso provide a possible fix to the issue mentioned"
-    threading.Thread(target=call_openai, args=(prompt, output_text)).start()
+    call_openai(prompt, output_text)
 
 
 def draft_invoice_note(input_text: str,
@@ -96,4 +95,4 @@ def draft_invoice_note(input_text: str,
         f"Invoicing Notes: {job_title}\n"
         f"{input_text}"
     )
-    threading.Thread(target=call_openai, args=(prompt, output_text)).start()
+    call_openai(prompt, output_text)

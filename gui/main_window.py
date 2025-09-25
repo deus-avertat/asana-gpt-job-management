@@ -1,12 +1,15 @@
 import datetime
+import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext, ttk
+from typing import Callable
 
 from vendor_setup import ensure_vendor_path
 
 ensure_vendor_path()
 
 from openai import OpenAIError
+from asana.rest import ApiException
 from tkcalendar import DateEntry
 from tkhtmlview import HTMLScrolledText
 
@@ -122,6 +125,50 @@ def create_main_window(openai_service, config: dict) -> None:
         root.deiconify()
         root.lift()
 
+    # Shared loading indicator -------------------------------------------------
+    status_frame = tk.Frame(root)
+    status_frame.pack(fill=tk.X, padx=10, pady=(0, 5))
+    status_label = tk.Label(status_frame, text="", anchor="w")
+    status_label.pack(side="left")
+    progress_bar = ttk.Progressbar(status_frame, mode="indeterminate")
+    loading_jobs = 0
+
+    def _show_progress() -> None:
+        if not progress_bar.winfo_ismapped():
+            progress_bar.pack(side="right", fill=tk.X, expand=True, padx=5)
+
+    def _hide_progress() -> None:
+        if progress_bar.winfo_ismapped():
+            progress_bar.pack_forget()
+
+    def start_loading(message: str) -> None:
+        nonlocal loading_jobs
+        loading_jobs += 1
+        status_label.config(text=message)
+        _show_progress()
+        progress_bar.start(10)
+
+    def stop_loading() -> None:
+        nonlocal loading_jobs
+        loading_jobs = max(0, loading_jobs - 1)
+        if loading_jobs == 0:
+            progress_bar.stop()
+            _hide_progress()
+            status_label.config(text="")
+
+    def run_with_loading(message: str, worker: Callable[[], None]) -> None:
+        start_loading(message)
+
+        def _runner() -> None:
+            try:
+                worker()
+            finally:
+                root.after(0, stop_loading)
+
+        threading.Thread(target=_runner, daemon=True).start()
+
+    root.run_with_loading = run_with_loading
+
     invoice_window = create_invoice_window(root, openai_service, config, show_main)
     invoice_window.withdraw()
 
@@ -195,15 +242,24 @@ def create_main_window(openai_service, config: dict) -> None:
 
     # OpenAI function
     def call_openai(prompt: str, output_widget: HTMLScrolledText, mode: str) -> None:
-        try:
-            reply = openai_service.generate_response(model_list_var.get(), prompt)
-            print("INFO: Saving to local history")
-            functions.database.save_to_history(mode, tone_var.get(), prompt, reply)
-            functions.ui.display_markdown(output_widget, reply)
-        except OpenAIError as e:
-            messagebox.showerror("OpenAI Error", str(e))
-        except Exception as e:
-            messagebox.showerror("Error", str(e))
+        def worker() -> None:
+            try:
+                reply = openai_service.generate_response(model_list_var.get(), prompt)
+            except OpenAIError as exc:
+                root.after(0, lambda: messagebox.showerror("OpenAI Error", str(exc)))
+                return
+            except Exception as exc:  # pragma: no cover - defensive programming
+                root.after(0, lambda: messagebox.showerror("Error", str(exc)))
+                return
+
+            def on_success() -> None:
+                print("INFO: Saving to local history")
+                functions.database.save_to_history(mode, tone_var.get(), prompt, reply)
+                functions.ui.display_markdown(output_widget, reply)
+
+            root.after(0, on_success)
+
+        run_with_loading("Generating response…", worker)
 
     attached_file_path = None
 
@@ -274,20 +330,48 @@ def create_main_window(openai_service, config: dict) -> None:
     copy_button.grid(row=1, column=0, padx=5)
 
     # Send job to asana button
-    asana_button = tk.Button(
-        button_frame_left_bottom,
-        text="Add to Asana",
-        command=lambda: functions.asana_api.send_to_asana(
+    def send_to_asana_with_loading() -> None:
+        task_request = functions.asana_api.build_asana_task_request(
             output_text,
             input_text,
-            asana_workspace,
             asana_project_id,
-            asana_token,
             assignee_var,
             priority_var,
             cal_var,
             asana_settings,
-        ),
+        )
+        if not task_request:
+            return
+
+        def worker() -> None:
+            try:
+                bullet_count = functions.asana_api.perform_asana_task_creation(
+                    asana_token, task_request
+                )
+            except ApiException as exc:
+                print(f"ERR: Asana API Error: {exc}")
+                root.after(0, lambda: messagebox.showerror("Asana API Error", str(exc)))
+            except Exception as exc:  # pragma: no cover - defensive programming
+                print(f"ERR: Asana Error: {exc}")
+                root.after(0, lambda: messagebox.showerror("Asana Error", str(exc)))
+            else:
+                def on_success() -> None:
+                    messagebox.showinfo(
+                        "Success",
+                        f"Task '{task_request.task_name}' created in Asana with {bullet_count} sub-tasks.",
+                    )
+                    print(
+                        f"INFO: Task '{task_request.task_name}' created in Asana with {bullet_count} sub-tasks."
+                    )
+
+                root.after(0, on_success)
+
+        run_with_loading("Creating Asana task…", worker)
+
+    asana_button = tk.Button(
+        button_frame_left_bottom,
+        text="Add to Asana",
+        command=send_to_asana_with_loading,
     )
     asana_button.grid(row=1, column=1, padx=5)
 
