@@ -47,7 +47,7 @@ def send_to_asana(output_text, input_text,
         api_client = asana.ApiClient(configuration) # Opens an Asana API client
         tasks_api = asana.TasksApi(api_client) # Opens an Asana Task API client
         # email_text = input_text.get("1.0", tk.END).strip()
-        bullet_point_pattern = r"(?:^[-*]\s+|^\d+\.\s+).+" # Finds bullet points in summary
+        bullet_point_pattern = r"(?:^\d+\.\s+).+" # Finds numbered bullet points in summary
         summary_without_tasks = re.sub(bullet_point_pattern, "", summary_plain, flags=re.MULTILINE).strip() # Strips bullet point tasks from summary
         notes = f"Email: \n{summary_without_tasks}" # Formats description of Asana job
 

@@ -42,7 +42,9 @@ def normalize_markdown_spacing(markdown_text: str) -> str:
     if not markdown_text:
         return ""
 
-    lines = markdown_text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    # print(markdown_text) # For debugging output
+
+    lines = markdown_text.replace("\r\n", "").replace("\r", "").split("\n")
     normalized: list[str] = []
     blank_run = 0
     last_nonempty: str | None = None

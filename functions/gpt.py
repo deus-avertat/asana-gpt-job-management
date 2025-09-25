@@ -56,7 +56,9 @@ def summarize(input_text: str,
 
     prompt = (
         f"Summarize the following message:\n\n{email_text}\n\n"
-        "Present the summary as Markdown with clear headings and bullet lists when useful."
+        "Present the summary as Markdown with clear headings and bullet lists when useful.\n"
+        " -Markdown should not use <p>, <div> or headers. Only bold, italics, dot points, and new lines\n"
+        " -Do not use new lines unless completely necessary."
     )
     if document_text:
         prompt += f"\nAlso summarize the following document:\n\n{document_text}"
@@ -82,13 +84,15 @@ def draft_invoice_note(input_text: str,
     prompt = (
         "You will be provided with job notes to be invoiced, and your task is to summarize the job as follows:\n"
         " -Single sentence summary of the job.\n"
-        " -Dated and dot point list of what was done on the job.\n\n"
+        " -Dated and dot point list of what was done on the job.\n"
+        " -Respond using Markdown.\n"
+        " -Markdown should not use <p>, <div> or headers. Only bold, italics, dot points, and new lines\n"
         "Notes should be formatted like so:\n"
-        "Invoicing notes: **[Job name]**\n"
+        "**Invoicing notes:**\n"
+        "**[Job name]**\n"
         "[Single sentence summary]\n"
-        "[Date in DD/MM/YYYY]\n"
+        "**[Date in DD/MM/YYYY]**\n"
         "[Dotted notes]\n\n"
-        "Respond using Markdown.\n\n"
         f"Invoicing Notes: {job_title}\n"
         f"{input_text}"
     )

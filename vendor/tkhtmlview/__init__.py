@@ -30,6 +30,7 @@ class _HTMLRenderer(HTMLParser):
     def _queue_newlines(self, count: int) -> None:
         if self._text_written:
             self._pending_newlines = max(self._pending_newlines, count)
+            # self._pending_newlines = 1 if count == 1 else max(self._pending_newlines, count)
 
     def _flush_newlines(self) -> None:
         if self._pending_newlines:
@@ -45,22 +46,21 @@ class _HTMLRenderer(HTMLParser):
 
     # -- HTMLParser API --------------------------------------------------
     def handle_starttag(self, tag: str, attrs: List[tuple[str, str | None]]) -> None:
-        if tag in {"p", "div"}:
-            self._queue_newlines(1)
-        elif tag in {"h1", "h2", "h3", "h4", "h5", "h6"}:
-            self._queue_newlines(2)
+        # if tag in {"p", "div"}:
+        #    self._queue_newlines(1)
+        if tag in {"h1", "h2", "h3", "h4", "h5", "h6"}:
             self.inline_tags.append(tag)
         elif tag == "br":
             self._queue_newlines(1)
             self._flush_newlines()
         elif tag == "ul":
-            self._queue_newlines(1)
+        #    self._queue_newlines(1)
             self.list_stack.append({"type": "ul", "index": 0})
         elif tag == "ol":
-            self._queue_newlines(1)
+        #    self._queue_newlines(1)
             self.list_stack.append({"type": "ol", "index": 0})
         elif tag == "li":
-            self._queue_newlines(1)
+            # self._queue_newlines(1)
             self._flush_newlines()
             bullet = "• "
             if self.list_stack:
@@ -78,21 +78,21 @@ class _HTMLRenderer(HTMLParser):
             self.inline_tags.append("code")
 
     def handle_endtag(self, tag: str) -> None:
-        if tag in {"p", "div"}:
+        if tag in {"p"}:
             self._queue_newlines(1)
         elif tag in {"h1", "h2", "h3", "h4", "h5", "h6"}:
             self._pop_inline_tag(tag)
-            self._queue_newlines(2)
-        elif tag == "li":
             self._queue_newlines(1)
+        # elif tag == "li":
+        #    self._queue_newlines(1)
         elif tag == "ul":
             if self.list_stack:
                 self.list_stack.pop()
-            self._queue_newlines(1)
+        #    self._queue_newlines(1)
         elif tag == "ol":
             if self.list_stack:
                 self.list_stack.pop()
-            self._queue_newlines(1)
+        #    self._queue_newlines(1)
         elif tag in {"strong", "b"}:
             self._pop_inline_tag("bold")
         elif tag in {"em", "i"}:
