@@ -114,9 +114,9 @@ def build_asana_task_request(
 
     opts: dict = {}
     if assignee:
-        opts["assignee"] = assignee
+        body["data"]["assignee"] = assignee
 
-    bullet_points = re.findall(r"(?:^[-*]\s+|^\d+\.\s+)(.+)", summary_plain, re.MULTILINE)
+    bullet_points = re.findall(r"^\d+\.\s+(.+)", summary_plain, re.MULTILINE)
 
     return AsanaTaskRequest(
         body=body,
