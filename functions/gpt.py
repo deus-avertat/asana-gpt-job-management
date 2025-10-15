@@ -1,3 +1,4 @@
+import datetime
 import tkinter as tk
 
 
@@ -85,9 +86,10 @@ def draft_invoice_note(input_text: str,
         " -Dated and dot point list of what was done on the job.\n"
         " -Respond using Markdown.\n"
         " -Markdown should not use <p>, <div> or headers. Only bold, italics, dot points, and new lines\n"
+        " -Note dates should be bold.\n"
         "Notes should be formatted like so:\n"
-        "**Invoicing notes:**\n"
-        "**[Job name]**\n"
+        f"**Invoiced:** {datetime.date.today().isoformat()}\n"
+        "**Job name:** [Job Name]\n"
         "[Single sentence summary]\n"
         "**[Date in DD/MM/YYYY]**\n"
         "[Dotted notes]\n\n"
