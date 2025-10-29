@@ -331,15 +331,25 @@ def create_main_window(openai_service, config: dict) -> None:
 
     # Send job to asana button
     def send_to_asana_with_loading() -> None:
-        task_request = functions.asana_api.build_asana_task_request(
-            output_text,
-            input_text,
-            asana_project_id,
-            assignee_var,
-            priority_var,
-            cal_var,
-            asana_settings,
-        )
+        try:
+            task_request = functions.asana_api.build_asana_task_request(
+                output_text,
+                input_text,
+                asana_project_id,
+                assignee_var,
+                priority_var,
+                cal_var,
+                asana_settings,
+                parent=root,
+            )
+        except Exception as exc:  # pragma: no cover - defensive for frozen builds
+            print(f"ERR: Failed to gather Asana task details: {exc}")
+            messagebox.showerror(
+                "Asana Error",
+                "Unable to collect the task details. Please try again.",
+                parent=root,
+            )
+            return
         if not task_request:
             return
 
@@ -350,15 +360,24 @@ def create_main_window(openai_service, config: dict) -> None:
                 )
             except ApiException as exc:
                 print(f"ERR: Asana API Error: {exc}")
-                root.after(0, lambda: messagebox.showerror("Asana API Error", str(exc)))
+                root.after(
+                    0,
+                    lambda: messagebox.showerror(
+                        "Asana API Error", str(exc), parent=root
+                    ),
+                )
             except Exception as exc:  # pragma: no cover - defensive programming
                 print(f"ERR: Asana Error: {exc}")
-                root.after(0, lambda: messagebox.showerror("Asana Error", str(exc)))
+                root.after(
+                    0,
+                    lambda: messagebox.showerror("Asana Error", str(exc), parent=root),
+                )
             else:
                 def on_success() -> None:
                     messagebox.showinfo(
                         "Success",
                         f"Task '{task_request.task_name}' created in Asana with {bullet_count} sub-tasks.",
+                        parent=root,
                     )
                     print(
                         f"INFO: Task '{task_request.task_name}' created in Asana with {bullet_count} sub-tasks."

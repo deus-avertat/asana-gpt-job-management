@@ -88,7 +88,7 @@ def draft_invoice_note(input_text: str,
         " -Markdown should not use <p>, <div> or headers. Only bold, italics, dot points, and new lines\n"
         " -Note dates should be bold.\n"
         "Notes should be formatted like so:\n"
-        f"**Invoiced:** {datetime.date.today().isoformat()}\n"
+        f"**INVOICED:** {datetime.date.today().isoformat()}\n"
         "**Job name:** [Job Name]\n"
         "[Single sentence summary]\n"
         "**[Date in DD/MM/YYYY]**\n"

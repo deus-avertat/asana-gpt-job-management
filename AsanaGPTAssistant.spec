@@ -1,11 +1,28 @@
 # -*- mode: python ; coding: utf-8 -*-
+from pathlib import Path
+
 from PyInstaller.utils.hooks import collect_all
 
-datas = [('config.json', '.')]
-binaries = []
-hiddenimports = []
-tmp_ret = collect_all('tkcalendar')
-datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+block_cipher = None
+
+config_path = Path('config.json')
+if not config_path.exists():
+    raise FileNotFoundError(
+        "config.json is required for building. Copy config.example.json and fill in your credentials before running PyInstaller."
+    )
+
+history_path = Path('history.db')
+if not history_path.exists():
+    history_path.touch()
+
+collect_data = collect_all('tkcalendar')
+datas = [
+    (str(config_path), '.'),
+    (str(history_path), '.'),
+    *collect_data[0],
+]
+binaries = [*collect_data[1]]
+hiddenimports = [*collect_data[2]]
 
 
 a = Analysis(
@@ -21,7 +38,7 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
-pyz = PYZ(a.pure)
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 exe = EXE(
     pyz,
