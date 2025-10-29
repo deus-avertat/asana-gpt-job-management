@@ -15,7 +15,9 @@ import functions.ui
 from functions.files import extract_text_from_file
 
 
-def create_invoice_window(root, openai_service, config, show_main_callback):
+def create_invoice_window(
+    root, openai_service, config, show_main_callback, loading_manager=None
+):
     """Build the invoice notes assistant window."""
 
     invoice_window = tk.Toplevel(root)
@@ -25,6 +27,27 @@ def create_invoice_window(root, openai_service, config, show_main_callback):
         window_title = f"{window_title} – {workspace}"
     invoice_window.title(window_title)
     invoice_window.geometry("800x960")
+
+    status_frame = tk.Frame(invoice_window)
+    status_frame.pack(fill="x", padx=10, pady=(0, 5))
+    status_label = tk.Label(status_frame, text="", anchor="w")
+    status_label.pack(side="left")
+    progress_bar = ttk.Progressbar(status_frame, mode="indeterminate")
+
+    def _show_progress() -> None:
+        if not progress_bar.winfo_ismapped():
+            progress_bar.pack(side="right", fill="x", expand=True, padx=5)
+
+    def _hide_progress() -> None:
+        if progress_bar.winfo_ismapped():
+            progress_bar.pack_forget()
+
+    if loading_manager is not None:
+        loading_manager.register(
+            status_label, progress_bar, _show_progress, _hide_progress
+        )
+    else:  # pragma: no cover - fallback for unexpected embedding contexts
+        _hide_progress()
 
     # Ensure closing the window returns the user to the main assistant
     invoice_window.protocol("WM_DELETE_WINDOW", show_main_callback)
@@ -43,7 +66,7 @@ def create_invoice_window(root, openai_service, config, show_main_callback):
     input_label.pack()
 
     input_text = scrolledtext.ScrolledText(invoice_window, height=4, wrap=tk.WORD)
-    input_text.pack(fill=tk.BOTH, padx=6, pady=5, expand=True)
+    input_text.pack(fill="both", padx=6, pady=5, expand=True)
 
     output_label = tk.Label(invoice_window, text="Invoice Assistant Output:")
     output_text = HTMLScrolledText(invoice_window, height=5)
@@ -169,6 +192,6 @@ def create_invoice_window(root, openai_service, config, show_main_callback):
 
     output_label.pack()
 
-    output_text.pack(fill=tk.BOTH, padx=6, pady=5, expand=True)
+    output_text.pack(fill="both", padx=6, pady=5, expand=True)
 
     return invoice_window

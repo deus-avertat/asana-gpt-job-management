@@ -126,35 +126,76 @@ def create_main_window(openai_service, config: dict) -> None:
         root.lift()
 
     # Shared loading indicator -------------------------------------------------
+
+    class LoadingIndicatorManager:
+        def __init__(self) -> None:
+            self.indicators = []
+            self.loading_jobs = 0
+            self.message = ""
+
+        def register(
+                self,
+                label: tk.Label,
+                progress: ttk.Progressbar,
+                show_cb: Callable[[], None],
+                hide_cb: Callable[[], None],
+        ) -> None:
+            indicator = {
+                "label": label,
+                "progress": progress,
+                "show": show_cb,
+                "hide": hide_cb,
+            }
+            self.indicators.append(indicator)
+            if self.loading_jobs > 0:
+                label.config(text=self.message)
+                show_cb()
+                progress.start(10)
+            else:
+                hide_cb()
+                label.config(text="")
+
+        def start(self, message: str) -> None:
+            self.loading_jobs += 1
+            self.message = message
+            for indicator in self.indicators:
+                indicator["label"].config(text=message)
+                indicator["show"]()
+                indicator["progress"].start(10)
+
+        def stop(self) -> None:
+            if self.loading_jobs == 0:
+                return
+            self.loading_jobs -= 1
+            if self.loading_jobs == 0:
+                for indicator in self.indicators:
+                    indicator["progress"].stop()
+                    indicator["hide"]()
+                    indicator["label"].config(text="")
+
+    loading_manager = LoadingIndicatorManager()
+
     status_frame = tk.Frame(root)
-    status_frame.pack(fill=tk.X, padx=10, pady=(0, 5))
+    status_frame.pack(fill="x", padx=10, pady=(0, 5))
     status_label = tk.Label(status_frame, text="", anchor="w")
     status_label.pack(side="left")
     progress_bar = ttk.Progressbar(status_frame, mode="indeterminate")
-    loading_jobs = 0
 
     def _show_progress() -> None:
         if not progress_bar.winfo_ismapped():
-            progress_bar.pack(side="right", fill=tk.X, expand=True, padx=5)
+            progress_bar.pack(side="right", fill="x", expand=True, padx=5)
 
     def _hide_progress() -> None:
         if progress_bar.winfo_ismapped():
             progress_bar.pack_forget()
 
+    loading_manager.register(status_label, progress_bar, _show_progress, _hide_progress)
+
     def start_loading(message: str) -> None:
-        nonlocal loading_jobs
-        loading_jobs += 1
-        status_label.config(text=message)
-        _show_progress()
-        progress_bar.start(10)
+        loading_manager.start(message)
 
     def stop_loading() -> None:
-        nonlocal loading_jobs
-        loading_jobs = max(0, loading_jobs - 1)
-        if loading_jobs == 0:
-            progress_bar.stop()
-            _hide_progress()
-            status_label.config(text="")
+        loading_manager.stop()
 
     def run_with_loading(message: str, worker: Callable[[], None]) -> None:
         start_loading(message)
@@ -168,8 +209,11 @@ def create_main_window(openai_service, config: dict) -> None:
         threading.Thread(target=_runner, daemon=True).start()
 
     root.run_with_loading = run_with_loading
+    root.loading_manager = loading_manager
 
-    invoice_window = create_invoice_window(root, openai_service, config, show_main)
+    invoice_window = create_invoice_window(
+        root, openai_service, config, show_main, loading_manager
+    )
     invoice_window.withdraw()
 
     # Email Input
@@ -177,7 +221,7 @@ def create_main_window(openai_service, config: dict) -> None:
     input_label.pack()
 
     input_text = scrolledtext.ScrolledText(root, height=10, wrap=tk.WORD)
-    input_text.pack(fill=tk.BOTH, padx=6, pady=5, expand=True)
+    input_text.pack(fill="both", padx=6, pady=5, expand=True)
 
     output_label = tk.Label(root, text="ChatGPT Output:")
     output_text = HTMLScrolledText(root, height=10)
@@ -523,6 +567,6 @@ def create_main_window(openai_service, config: dict) -> None:
 
     output_label.pack()
 
-    output_text.pack(fill=tk.BOTH, padx=6, pady=5, expand=True)
+    output_text.pack(fill="both", padx=6, pady=5, expand=True)
 
     root.mainloop()
