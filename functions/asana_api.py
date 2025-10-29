@@ -1,6 +1,9 @@
 import copy
 import re
+import sys
 import tkinter as tk
+import traceback
+from contextlib import suppress
 from dataclasses import dataclass
 from tkinter import messagebox, simpledialog
 from typing import Optional
@@ -97,10 +100,24 @@ class _TaskNameDialog:
 def _prompt_task_name(parent_widget: tk.Misc | None) -> Optional[str]:
     """Collect the Asana task name from the user.
 
-    A direct ``askstring`` call works in the live application but fails to
-    display on some packaged builds.  Catch any Tk errors and retry with a
-    custom dialog so the button still feels responsive in the frozen app.
+    Frozen builds occasionally struggle to show the themed ``simpledialog``
+    prompt.  Prefer the lightweight custom dialog when the app is frozen and
+    fall back to it whenever Tk raises an unexpected exception.  This keeps the
+    button responsive instead of bubbling the error up to the caller.
     """
+
+    def _show_custom_dialog() -> Optional[str]:
+        try:
+            dialog = _TaskNameDialog(parent_widget)
+        except Exception as dialog_exc:  # pragma: no cover - defensive fallback
+            print(f"ERR: Failed to open fallback task dialog: {dialog_exc}")
+            traceback.print_exc()
+            return None
+        return dialog.show()
+
+    # When running from PyInstaller (``sys.frozen``) skip the native dialog.
+    if getattr(sys, "frozen", False):  # pragma: no cover - depends on build env
+        return _show_custom_dialog()
 
     try:
         return simpledialog.askstring(
@@ -110,12 +127,8 @@ def _prompt_task_name(parent_widget: tk.Misc | None) -> Optional[str]:
         )
     except Exception as exc:  # pragma: no cover - only surfaces in frozen app
         print(f"ERR: Failed to open simpledialog for task name: {exc}")
-        try:
-            dialog = _TaskNameDialog(parent_widget)
-        except Exception as dialog_exc:  # pragma: no cover - defensive fallback
-            print(f"ERR: Failed to open fallback task dialog: {dialog_exc}")
-            return None
-        return dialog.show()
+        traceback.print_exc()
+        return _show_custom_dialog()
 
 def build_asana_task_request(
     output_text,
@@ -137,8 +150,19 @@ def build_asana_task_request(
         except Exception: # pragma: no cover - best effort fallback
             parent_widget = None
 
-    summary_markdown = functions.ui.get_widget_markdown(output_text)
-    summary_plain = functions.ui.markdown_to_plain_text(summary_markdown)
+    try:
+        summary_markdown = functions.ui.get_widget_markdown(output_text)
+    except Exception as exc:  # pragma: no cover - unexpected widget shape
+        print(f"ERR: Failed to read summary markdown: {exc}")
+        traceback.print_exc()
+        summary_markdown = ""
+
+    try:
+        summary_plain = functions.ui.markdown_to_plain_text(summary_markdown)
+    except Exception as exc:  # pragma: no cover - dependency mismatch fallback
+        print(f"ERR: Failed to convert markdown to plain text: {exc}")
+        traceback.print_exc()
+        summary_plain = summary_markdown.strip()
     if not summary_plain:
         messagebox.showwarning(
             "Empty", "There is no summary to send.", parent=parent_widget
@@ -175,7 +199,12 @@ def build_asana_task_request(
     bullet_point_pattern = r"(?:^\d+\.\s+).+"
     summary_without_tasks = re.sub(bullet_point_pattern, "", summary_plain, flags=re.MULTILINE).strip()
     notes = f"Email: \n{summary_without_tasks}"
-    original_email = input_text.get("1.0", tk.END).strip()
+    try:
+        original_email = input_text.get("1.0", tk.END).strip()
+    except Exception as exc:  # pragma: no cover - unexpected widget shape
+        print(f"ERR: Failed to read original email: {exc}")
+        traceback.print_exc()
+        original_email = ""
 
     # Priority and additional custom fields
     priority_mapping = {}
@@ -234,7 +263,14 @@ def build_asana_task_request(
         body["data"].pop("projects")
 
     body["data"]["name"] = task_name
-    body["data"]["due_on"] = functions.ui.get_date(cal_var)
+    try:
+        due_on = functions.ui.get_date(cal_var)
+    except Exception as exc:  # pragma: no cover - unexpected widget state
+        print(f"ERR: Failed to read calendar selection: {exc}")
+        traceback.print_exc()
+        due_on = ""
+
+    body["data"]["due_on"] = due_on
     body["data"]["notes"] = notes
 
     existing_custom_fields = body["data"].get("custom_fields", {})

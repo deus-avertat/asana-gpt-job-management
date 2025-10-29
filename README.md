@@ -20,6 +20,40 @@ The project vendors lightweight, offline-friendly replacements for the Markdown 
 
 Both packages live under the `vendor/` directory and are automatically added to `sys.path` at runtime.
 
+## Building executables
+
+The application ships with PyInstaller spec files for two different packaging
+approaches:
+
+* **Single-file executable** – `AsanaGPTAssistant.spec` matches the original
+  build and bundles everything into one file that extracts to a temporary
+  directory at runtime.
+* **Onedir distribution** – `AsanaGPTAssistant-onedir.spec` keeps the Python
+  files unpacked beside the launcher so Tcl/Tk assets can be read directly from
+  disk. This variant avoids the themed dialog issues some frozen builds hit.
+
+To create either build:
+
+1. Ensure you have a populated `config.json` (copy `config.example.json` and
+   edit the credentials) and that `history.db` exists in the project root.
+2. Install the dependencies into a virtual environment: `pip install -r
+   requirements.txt`.
+3. Run PyInstaller with the desired spec file, for example:
+
+   ```bash
+   pyinstaller AsanaGPTAssistant-onedir.spec --noconfirm --clean
+   ```
+
+   or
+
+   ```bash
+   pyinstaller AsanaGPTAssistant.spec --noconfirm --clean
+   ```
+
+The onedir build produces a folder containing the launcher and dependencies in
+`dist/AsanaGPTAssistant`. Distribute the entire folder to keep the UI dialogs
+functional.
+
 ## Screenshots
 
 **Main Window**

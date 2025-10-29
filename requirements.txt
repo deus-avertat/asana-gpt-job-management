@@ -1,0 +1,6 @@
+asana>=2.0.0
+openai>=1.0.0
+tkcalendar>=1.6.1
+tkhtmlview>=0.1.0
+python-docx>=0.8.11
+PyPDF2>=3.0.0
