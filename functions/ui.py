@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import os
+import sys
 import tkinter as tk
 from tkinter import messagebox
-from typing import Any
+
+from typing import Any, Callable
 
 from docx import Document
 
@@ -15,6 +16,7 @@ ensure_vendor_path()
 
 import markdown
 
+from functions.clipboard import get_clipboard_html
 
 def _is_list_item(line: str) -> bool:
     """Return ``True`` when *line* represents a Markdown list item."""
@@ -78,6 +80,43 @@ def copy_output(tk_root, output_text):
     tk_root.clipboard_append(markdown_text)
     messagebox.showinfo("Copied", "Output copied to clipboard.")
 
+def _bind_sequence(widget: tk.Misc, sequence: str, callback: Callable[[tk.Event], str | None]) -> None:
+    """Safely attach *callback* to *sequence* without clobbering defaults."""
+
+    try:
+        widget.bind(sequence, callback, add=True)
+    except TypeError:  # pragma: no cover - Tk < 8.6 compatibility
+        widget.bind(sequence, callback)
+
+
+def enable_html_clipboard_paste(widget: tk.Text) -> None:
+    """Allow ``widget`` to render HTML fragments when pasted from the clipboard."""
+
+    def _handle_paste(event: tk.Event) -> str | None:
+        html_fragment = get_clipboard_html(widget)
+        if not html_fragment:
+            return None
+
+        if hasattr(widget, "set_html"):
+            try:
+                widget.set_html(html_fragment)
+            except Exception:  # pragma: no cover - defensive fallback
+                widget.delete("1.0", tk.END)
+                widget.insert(tk.INSERT, html_fragment)
+        else:  # pragma: no cover - compatibility fallback
+            widget.delete("1.0", tk.END)
+            widget.insert(tk.INSERT, html_fragment)
+
+        setattr(widget, "raw_html", html_fragment)
+        return "break"
+
+    _bind_sequence(widget, "<<Paste>>", _handle_paste)
+    _bind_sequence(widget, "<Control-v>", _handle_paste)
+    _bind_sequence(widget, "<Control-V>", _handle_paste)
+    _bind_sequence(widget, "<Shift-Insert>", _handle_paste)
+    if sys.platform == "darwin":  # pragma: no cover - macOS specific shortcut
+        _bind_sequence(widget, "<Command-v>", _handle_paste)
+        _bind_sequence(widget, "<Command-V>", _handle_paste)
 
 def get_widget_markdown(output_widget: Any) -> str:
     """Return the raw Markdown stored on an output widget."""

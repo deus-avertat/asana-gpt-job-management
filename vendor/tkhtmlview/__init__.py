@@ -10,7 +10,8 @@ import tkinter as tk
 from tkinter import scrolledtext
 from tkinter import font as tkfont
 from html.parser import HTMLParser
-from typing import List
+import webbrowser
+from typing import Callable, List, Optional
 
 __all__ = ["HTMLScrolledText"]
 
@@ -18,13 +19,20 @@ __all__ = ["HTMLScrolledText"]
 class _HTMLRenderer(HTMLParser):
     """Render a restricted HTML subset into a ``tk.Text`` widget."""
 
-    def __init__(self, widget: tk.Text) -> None:
+    def __init__(
+            self,
+            widget: tk.Text,
+            register_link: Optional[Callable[[str, str], None]] = None,
+    ) -> None:
         super().__init__(convert_charrefs=True)
         self.widget = widget
+        self._register_link = register_link
         self.inline_tags: List[str] = []
         self.list_stack: List[dict[str, int]] = []
         self._pending_newlines = 0
         self._text_written = False
+        self._link_stack: List[str] = []
+        self._link_counter = 0
 
     # -- Helpers ---------------------------------------------------------
     def _queue_newlines(self, count: int) -> None:
@@ -76,6 +84,22 @@ class _HTMLRenderer(HTMLParser):
             self.inline_tags.append("italic")
         elif tag == "code":
             self.inline_tags.append("code")
+        elif tag == "a":
+            href: Optional[str] = None
+            for attr_name, attr_value in attrs:
+                if attr_name.lower() == "href" and attr_value:
+                    href = attr_value
+                    break
+            link_tag = "link"
+            if href and self._register_link is not None:
+                self._link_counter += 1
+                link_tag = f"link_{self._link_counter}"
+                try:
+                    self._register_link(link_tag, href)
+                except Exception:
+                    link_tag = "link"
+            self.inline_tags.append(link_tag)
+            self._link_stack.append(link_tag)
 
     def handle_endtag(self, tag: str) -> None:
         if tag in {"p"}:
@@ -99,6 +123,10 @@ class _HTMLRenderer(HTMLParser):
             self._pop_inline_tag("italic")
         elif tag == "code":
             self._pop_inline_tag("code")
+        elif tag == "a":
+            link_tag = self._link_stack.pop() if self._link_stack else None
+            if link_tag:
+                self._pop_inline_tag(link_tag)
 
     def handle_startendtag(self, tag: str, attrs: List[tuple[str, str | None]]) -> None:
         if tag == "br":
@@ -128,6 +156,7 @@ class HTMLScrolledText(scrolledtext.ScrolledText):
         kwargs.setdefault("wrap", tk.WORD)
         super().__init__(master, **kwargs)
         self.raw_markdown = ""
+        self._link_tags: dict[str, str] = {}
         self._configure_tags()
 
     # -- Tag configuration ------------------------------------------------
@@ -151,13 +180,19 @@ class HTMLScrolledText(scrolledtext.ScrolledText):
             heading_font.configure(weight="bold", size=max(base_font["size"] + 6 - (level * 2), base_font["size"]))
             self.tag_configure(f"h{level}", font=heading_font, spacing1=4, spacing3=4)
 
+        self.tag_configure("link", foreground="#0645AD", underline=True)
+        self.tag_bind("link", "<Button-1>", self._open_default_link)
+        self.tag_bind("link", "<Enter>", lambda _event: self.config(cursor="hand2"))
+        self.tag_bind("link", "<Leave>", lambda _event: self.config(cursor=""))
+
     # -- Public API ------------------------------------------------------
     def set_html(self, html_content: str) -> None:
         """Render the supplied HTML string inside the widget."""
 
         self.config(state=tk.NORMAL)
         self.delete("1.0", tk.END)
-        renderer = _HTMLRenderer(self)
+        self._clear_dynamic_links()
+        renderer = _HTMLRenderer(self, self._register_link_tag)
         renderer.feed(html_content or "")
         renderer.close()
         self.see("1.0")
@@ -168,3 +203,31 @@ class HTMLScrolledText(scrolledtext.ScrolledText):
         self.config(state=tk.NORMAL)
         self.delete("1.0", tk.END)
         self.raw_markdown = ""
+
+# -- Internal helpers ------------------------------------------------
+    def _register_link_tag(self, tag_name: str, href: str) -> None:
+        self._link_tags[tag_name] = href
+        self.tag_configure(tag_name, foreground="#0645AD", underline=True)
+        self.tag_bind(tag_name, "<Button-1>", lambda _event, url=href: self._open_link(url))
+        self.tag_bind(tag_name, "<Enter>", lambda _event: self.config(cursor="hand2"))
+        self.tag_bind(tag_name, "<Leave>", lambda _event: self.config(cursor=""))
+
+    def _clear_dynamic_links(self) -> None:
+        for tag in list(self._link_tags):
+            self.tag_unbind(tag, "<Button-1>")
+            self.tag_unbind(tag, "<Enter>")
+            self.tag_unbind(tag, "<Leave>")
+            self.tag_delete(tag)
+            self._link_tags.pop(tag, None)
+        self.config(cursor="")
+
+    def _open_link(self, url: str) -> None:
+        try:
+            webbrowser.open(url)
+        except Exception:
+            pass
+
+    def _open_default_link(self, _event: tk.Event) -> None:
+        url = self._link_tags.get("link")
+        if url:
+            self._open_link(url)

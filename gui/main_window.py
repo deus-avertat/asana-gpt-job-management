@@ -1,7 +1,7 @@
 import datetime
 import threading
 import tkinter as tk
-from tkinter import filedialog, messagebox, scrolledtext, ttk
+from tkinter import filedialog, messagebox, ttk
 from typing import Callable
 
 from vendor_setup import ensure_vendor_path
@@ -220,8 +220,9 @@ def create_main_window(openai_service, config: dict) -> None:
     input_label = tk.Label(root, text="Paste Email Content Here:")
     input_label.pack()
 
-    input_text = scrolledtext.ScrolledText(root, height=10, wrap=tk.WORD)
+    input_text = HTMLScrolledText(root, height=10)
     input_text.pack(fill="both", padx=6, pady=5, expand=True)
+    functions.ui.enable_html_clipboard_paste(input_text)
 
     output_label = tk.Label(root, text="ChatGPT Output:")
     output_text = HTMLScrolledText(root, height=10)
