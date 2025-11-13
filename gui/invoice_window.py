@@ -70,6 +70,7 @@ def create_invoice_window(
 
     output_label = tk.Label(invoice_window, text="Invoice Assistant Output:")
     output_text = HTMLScrolledText(invoice_window, height=5)
+    functions.ui.enable_html_clipboard_copy(invoice_window, output_text)
 
     button_frame_main = tk.Frame(invoice_window)
     button_frame_main.pack()

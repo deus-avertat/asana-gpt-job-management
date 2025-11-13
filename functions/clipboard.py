@@ -5,6 +5,24 @@ import tkinter as tk
 from typing import Iterable, Optional
 
 
+def set_clipboard_html(
+    widget: tk.Misc,
+    plain_text: str,
+    html_text: str,
+    cf_html: str,
+) -> bool:
+    """Populate the clipboard with plain text and HTML targets."""
+
+    if sys.platform.startswith("win"):
+        try:
+            if _set_clipboard_html_windows(plain_text, cf_html):
+                return True
+        except Exception:
+            # Fall back to Tk-based clipboard handling on any failure.
+            pass
+
+    return _set_clipboard_html_via_tk(widget, plain_text, html_text, cf_html)
+
 def get_clipboard_html(widget: tk.Misc) -> Optional[str]:
     """Return the HTML fragment currently stored on the clipboard, if any."""
 
@@ -164,5 +182,133 @@ def _get_html_windows() -> Optional[str]:  # pragma: no cover - platform specifi
 
         raw_string = raw_bytes.split(b"\x00", 1)[0].decode("utf-8", errors="ignore")
         return raw_string.strip() or None
+    finally:
+        close_clipboard()
+
+def _set_clipboard_html_via_tk(
+    widget: tk.Misc,
+    plain_text: str,
+    html_text: str,
+    cf_html: str,
+) -> bool:
+    """Use Tk clipboard APIs to advertise HTML/plain text."""
+
+    try:
+        widget.clipboard_clear()
+    except tk.TclError:
+        return False
+
+    success = False
+
+    if plain_text:
+        try:
+            widget.clipboard_append(plain_text)
+            success = True
+        except tk.TclError:
+            pass
+
+    html_targets = (
+        ("text/html", cf_html or html_text),
+        ("HTML Format", cf_html or html_text),
+    )
+    for target, payload in html_targets:
+        if not payload:
+            continue
+        try:
+            widget.clipboard_append(payload, type=target)
+            success = True
+        except tk.TclError:
+            continue
+
+    if not success and (html_text or cf_html):
+        try:
+            widget.clipboard_append(html_text or cf_html)
+            success = True
+        except tk.TclError:
+            pass
+
+    return success
+
+
+def _set_clipboard_html_windows(plain_text: str, cf_html: str) -> bool:  # pragma: no cover - platform specific
+    import ctypes
+    from ctypes import wintypes
+
+    GMEM_MOVEABLE = 0x0002
+    CF_UNICODETEXT = 13
+
+    user32 = ctypes.windll.user32
+    kernel32 = ctypes.windll.kernel32
+
+    register_format = getattr(user32, "RegisterClipboardFormatW")
+    open_clipboard = getattr(user32, "OpenClipboard")
+    empty_clipboard = getattr(user32, "EmptyClipboard")
+    close_clipboard = getattr(user32, "CloseClipboard")
+    set_clipboard_data = getattr(user32, "SetClipboardData")
+    global_alloc = getattr(kernel32, "GlobalAlloc")
+    global_lock = getattr(kernel32, "GlobalLock")
+    global_unlock = getattr(kernel32, "GlobalUnlock")
+    global_free = getattr(kernel32, "GlobalFree")
+
+    register_format.argtypes = [wintypes.LPCWSTR]
+    register_format.restype = wintypes.UINT
+    open_clipboard.argtypes = [wintypes.HWND]
+    open_clipboard.restype = wintypes.BOOL
+    empty_clipboard.argtypes = []
+    empty_clipboard.restype = wintypes.BOOL
+    close_clipboard.argtypes = []
+    close_clipboard.restype = wintypes.BOOL
+    set_clipboard_data.argtypes = [wintypes.UINT, wintypes.HANDLE]
+    set_clipboard_data.restype = wintypes.HANDLE
+    try:
+        size_t_type = wintypes.SIZE_T  # type: ignore[attr-defined]
+    except AttributeError:  # pragma: no cover - python < 3.8 fallback
+        size_t_type = getattr(ctypes, "c_size_t")
+    global_alloc.argtypes = [wintypes.UINT, size_t_type]
+    global_alloc.restype = wintypes.HGLOBAL
+    global_lock.argtypes = [wintypes.HGLOBAL]
+    global_lock.restype = wintypes.LPVOID
+    global_unlock.argtypes = [wintypes.HGLOBAL]
+    global_unlock.restype = wintypes.BOOL
+    global_free.argtypes = [wintypes.HGLOBAL]
+    global_free.restype = wintypes.HGLOBAL
+
+    html_format = register_format("HTML Format")
+    if not html_format:
+        return False
+
+    if not open_clipboard(None):
+        return False
+
+    try:
+        if not empty_clipboard():
+            return False
+
+        def _store_clipboard_data(format_id: int, payload: bytes) -> bool:
+            handle = global_alloc(GMEM_MOVEABLE, len(payload))
+            if not handle:
+                return False
+            pointer = global_lock(handle)
+            if not pointer:
+                global_free(handle)
+                return False
+            ctypes.memmove(pointer, payload, len(payload))
+            global_unlock(handle)
+            if not set_clipboard_data(format_id, handle):
+                global_free(handle)
+                return False
+            return True
+
+        if plain_text:
+            text_bytes = plain_text.encode("utf-16-le") + b"\x00\x00"
+            if not _store_clipboard_data(CF_UNICODETEXT, text_bytes):
+                return False
+
+        if cf_html:
+            html_bytes = cf_html.encode("utf-8") + b"\x00"
+            if not _store_clipboard_data(html_format, html_bytes):
+                return False
+
+        return bool(cf_html)
     finally:
         close_clipboard()

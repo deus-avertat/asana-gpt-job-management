@@ -226,6 +226,7 @@ def create_main_window(openai_service, config: dict) -> None:
 
     output_label = tk.Label(root, text="ChatGPT Output:")
     output_text = HTMLScrolledText(root, height=10)
+    functions.ui.enable_html_clipboard_copy(root, output_text)
 
     # Email history
     history_frame = tk.Frame(root)
