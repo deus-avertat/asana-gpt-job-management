@@ -6,6 +6,7 @@ assistant relies on (currently only :class:`HTMLScrolledText` with a
 """
 from __future__ import annotations
 
+import re
 import tkinter as tk
 from tkinter import scrolledtext
 from tkinter import font as tkfont
@@ -107,16 +108,16 @@ class _HTMLRenderer(HTMLParser):
         elif tag in {"h1", "h2", "h3", "h4", "h5", "h6"}:
             self._pop_inline_tag(tag)
             self._queue_newlines(1)
-        # elif tag == "li":
-        #    self._queue_newlines(1)
+        elif tag == "li":
+            self._queue_newlines(1)
         elif tag == "ul":
             if self.list_stack:
                 self.list_stack.pop()
-        #    self._queue_newlines(1)
+            self._queue_newlines(1)
         elif tag == "ol":
             if self.list_stack:
                 self.list_stack.pop()
-        #    self._queue_newlines(1)
+            self._queue_newlines(1)
         elif tag in {"strong", "b"}:
             self._pop_inline_tag("bold")
         elif tag in {"em", "i"}:
@@ -136,6 +137,12 @@ class _HTMLRenderer(HTMLParser):
     def handle_data(self, data: str) -> None:
         if not data:
             return
+        # Collapse excess whitespace created by indentation or formatting.
+        if "\n" in data or "\t" in data or "  " in data:
+            if data.strip():
+                data = re.sub(r"\s+", " ", data)
+            else:
+                data = " "
         self._flush_newlines()
         tags = tuple(self.inline_tags)
         if tags:
