@@ -1,6 +1,7 @@
 import datetime
 import threading
 import tkinter as tk
+import tkinter.font as tkfont
 from tkinter import filedialog, messagebox, ttk
 from typing import Callable
 
@@ -216,16 +217,20 @@ def create_main_window(openai_service, config: dict) -> None:
     )
     invoice_window.withdraw()
 
+    # Tkinter Font
+    scrolled_font = tk.font.nametofont("TkDefaultFont").copy()
+    scrolled_font.configure(size=10)
+
     # Email Input
     input_label = tk.Label(root, text="Paste Email Content Here:")
     input_label.pack()
 
-    input_text = HTMLScrolledText(root, height=10)
+    input_text = HTMLScrolledText(root, height=10, font=scrolled_font)
     input_text.pack(fill="both", padx=6, pady=5, expand=True)
     functions.ui.enable_html_clipboard_paste(input_text)
 
     output_label = tk.Label(root, text="ChatGPT Output:")
-    output_text = HTMLScrolledText(root, height=10)
+    output_text = HTMLScrolledText(root, height=10, font=scrolled_font)
     functions.ui.enable_html_clipboard_copy(root, output_text)
 
     # Email history
