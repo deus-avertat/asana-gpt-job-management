@@ -52,7 +52,18 @@ def create_invoice_window(
     # Ensure closing the window returns the user to the main assistant
     invoice_window.protocol("WM_DELETE_WINDOW", show_main_callback)
 
-    model_list_var = getattr(root, "shared_model_var", tk.StringVar(master=root, value="gpt-4"))
+    model_list_var = getattr(
+        root, "shared_model_var", tk.StringVar(master=root, value="gpt-5")
+    )
+    model_choices = getattr(
+        root,
+        "shared_model_choices",
+        ["gpt-4", "gpt-4.1", "gpt-5", "o4-mini"],
+    )
+    if not isinstance(model_choices, list) or not model_choices:
+        model_choices = ["gpt-4", "gpt-4.1", "gpt-5", "o4-mini"]
+    if model_list_var.get() not in model_choices:
+        model_list_var.set(model_choices[0])
 
     # Job Title
     job_title_label = tk.Label(invoice_window, text="Enter Job Title:")
@@ -93,11 +104,12 @@ def create_invoice_window(
     model_list_label.config(font=("Segoe UI", 9, "bold"))
     model_list_label.grid(row=0, column=0, padx=5)
 
-    model_list = ttk.OptionMenu(button_frame_right_top, model_list_var, model_list_var.get(),
-                                "gpt-4",
-                                "gpt-4.1",
-                                "gpt-5",
-                                "o4-mini")
+    model_list = ttk.OptionMenu(
+        button_frame_right_top,
+        model_list_var,
+        model_list_var.get(),
+        *model_choices,
+    )
     model_list.grid(row=1, column=0, padx=5)
 
     # note_style_var = tk.StringVar(value="Concise")

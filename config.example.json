@@ -3,6 +3,13 @@
   "asana_token": "",
   "asana_project_id": "",
   "asana_workspace": "example.com",
+  "default_model": "gpt-5",
+  "model_choices": [
+    "gpt-4",
+    "gpt-4.1",
+    "gpt-5",
+    "o4-mini"
+  ],
   "asana_assignees": [
     { "name": "Joe", "email": "joe@{workspace}" },
     { "name": "Biden", "email": "biden@{workspace}" }

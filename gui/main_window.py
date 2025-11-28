@@ -111,11 +111,25 @@ def create_main_window(openai_service, config: dict) -> None:
     root.title("ChatGPT Email Assistant")
     root.geometry("800x960")
 
-    default_model = config.get("default_model", "gpt-4")
+    fallback_models = ["gpt-4", "gpt-4.1", "gpt-5", "o4-mini"]
+    model_choices_raw = config.get("model_choices")
+    model_choices = (
+        [entry for entry in model_choices_raw if isinstance(entry, str) and entry]
+        if isinstance(model_choices_raw, list)
+        else []
+    )
+    if not model_choices:
+        model_choices = fallback_models.copy()
+    model_choices = list(dict.fromkeys(model_choices))
+
+    default_model = config.get("default_model", model_choices[0])
+    if default_model not in model_choices:
+        default_model = model_choices[0]
 
     # Shared model selection across windows
     model_list_var = tk.StringVar(value=default_model)
     root.shared_model_var = model_list_var
+    root.shared_model_choices = model_choices
 
     invoice_window = None
 
@@ -275,10 +289,7 @@ def create_main_window(openai_service, config: dict) -> None:
         button_frame_right_top,
         model_list_var,
         default_model,
-        "gpt-4",
-        "gpt-4.1",
-        "gpt-5",
-        "o4-mini",
+        *model_choices,
     )
     model_list.grid(row=1, column=0, padx=5)
 
