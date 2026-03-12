@@ -130,6 +130,31 @@ def _prompt_task_name(parent_widget: tk.Misc | None) -> Optional[str]:
         traceback.print_exc()
         return _show_custom_dialog()
 
+def _validate_required_task_fields(task_name: Optional[str], asana_project_id) -> list[str]:
+    """Return user-facing validation errors for required Asana task fields."""
+
+    errors: list[str] = []
+    normalized_task_name = task_name.strip() if isinstance(task_name, str) else ""
+    if not normalized_task_name:
+        errors.append("Task name is required.")
+
+    has_project_id = False
+    if isinstance(asana_project_id, str):
+        has_project_id = bool(asana_project_id.strip())
+    elif isinstance(asana_project_id, (list, tuple, set)):
+        has_project_id = any(
+            isinstance(candidate, str) and bool(candidate.strip())
+            for candidate in asana_project_id
+        )
+    elif isinstance(asana_project_id, dict):
+        gid = asana_project_id.get("gid")
+        has_project_id = isinstance(gid, str) and bool(gid.strip())
+
+    if not has_project_id:
+        errors.append("Asana project ID is missing from configuration.")
+
+    return errors
+
 def build_asana_task_request(
     output_text,
     input_text,
@@ -171,13 +196,15 @@ def build_asana_task_request(
         return None
 
     task_name = _prompt_task_name(parent_widget)
+    if isinstance(task_name, str):
+        task_name = task_name.strip()
     print(f"INFO: Set Task Name: {task_name}")
 
-    if not asana_project_id or not task_name:
-        messagebox.showerror(
-            "Missing Info", "Task name is required.", parent=parent_widget
-        )
-        print("WARN: Task name is required.")
+    validation_errors = _validate_required_task_fields(task_name, asana_project_id)
+    if validation_errors:
+        error_text = "\n".join(validation_errors)
+        messagebox.showerror("Missing Info", error_text, parent=parent_widget)
+        print(f"WARN: {error_text}")
         return None
 
     assignee = ""

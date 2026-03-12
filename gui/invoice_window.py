@@ -195,10 +195,15 @@ def create_invoice_window(
     # )
     # prompt_button.grid(row=0, column=0, pady=5, padx=5)
 
+    def copy_output_to_clipboard() -> None:
+        copied = functions.ui.copy_output(invoice_window, output_text)
+        if not copied:
+            print("WARN: Copy output failed in invoice window")
+
     copy_button = ttk.Button(
         button_frame_left_bottom,
         text="Copy Output",
-        command=lambda: functions.ui.copy_output(invoice_window, output_text),
+        command=copy_output_to_clipboard,
     )
     copy_button.grid(row=0, column=0, padx=5)
 

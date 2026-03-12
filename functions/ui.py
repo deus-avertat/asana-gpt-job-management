@@ -139,7 +139,7 @@ def get_date(cal_var):
     print(f"INFO: Selected Date: {selected_date}")
     return selected_date
 
-def copy_output(tk_root, output_text, *, show_alert: bool = True):
+def copy_output(tk_root, output_text, *, show_alert: bool = True) -> bool:
     print("INFO: Copied Output to Clipboard")
     markdown_text = get_widget_markdown(output_text)
     html_text = getattr(output_text, "rendered_html", None)
@@ -150,7 +150,8 @@ def copy_output(tk_root, output_text, *, show_alert: bool = True):
 
     plain_text = markdown_to_plain_text(markdown_text) if markdown_text else ""
 
-    success = set_clipboard_html(tk_root, plain_text, html_text, cf_html)
+    html_copy_succeeded = set_clipboard_html(tk_root, plain_text, html_text, cf_html)
+    success = html_copy_succeeded
 
     if not success:
         try:
@@ -161,8 +162,15 @@ def copy_output(tk_root, output_text, *, show_alert: bool = True):
                 success = True
         except tk.TclError:
             success = False
-    if show_alert:
+    if show_alert and success:
         messagebox.showinfo("Copied", "Output copied to clipboard.")
+    elif show_alert:
+        messagebox.showwarning(
+            "Copy Failed",
+            "Unable to copy output to clipboard. Please try copying manually.",
+        )
+
+    return success
 
 
 def _bind_sequence(widget: tk.Misc, sequence: str, callback: Callable[[tk.Event], str | None]) -> None:
@@ -207,7 +215,9 @@ def enable_html_clipboard_copy(tk_root: tk.Misc, widget: tk.Text) -> None:
     """Ensure ``widget`` advertises HTML when copied via keyboard shortcuts."""
 
     def _handle_copy(event: tk.Event) -> str | None:
-        copy_output(tk_root, widget, show_alert=False)
+        copied = copy_output(tk_root, widget, show_alert=False)
+        if not copied:
+            widget.bell()
         return "break"
 
     _bind_sequence(widget, "<<Copy>>", _handle_copy)

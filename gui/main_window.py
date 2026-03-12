@@ -435,10 +435,15 @@ def create_main_window(openai_service, config: dict) -> None:
     attach_button.grid(row=0, column=2, padx=5)
 
     # Copy response text
+    def copy_output_to_clipboard() -> None:
+        copied = functions.ui.copy_output(root, output_text)
+        if not copied:
+            print("WARN: Copy output failed in main window")
+
     copy_button = ttk.Button(
         button_frame_left_bottom,
         text="Copy Output",
-        command=lambda: functions.ui.copy_output(root, output_text),
+        command=copy_output_to_clipboard,
     )
     copy_button.grid(row=1, column=0, padx=5)
 
