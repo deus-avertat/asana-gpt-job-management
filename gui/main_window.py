@@ -24,6 +24,34 @@ from gui.theme import apply_hyprland_theme
 
 # GUI ----------------------------------------------------------------
 
+def _save_history_and_display(
+        mode: str,
+        tone: str,
+        prompt: str,
+        reply: str,
+        output_widget: HTMLScrolledText,
+        *,
+        save_to_history: Callable[[str, str, str, str], None],
+        display_markdown: Callable[[HTMLScrolledText, str], None],
+        log: Callable[[str], None] = print,
+        show_warning: Callable[[str, str], None] | None = None,
+) -> None:
+    """Persist response history and always render output to the UI."""
+    try:
+        save_to_history(mode, tone, prompt, reply)
+    except Exception as exc:
+        timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        log(
+            "ERROR: Failed to save history "
+            f"(mode={mode}, timestamp={timestamp}): {exc}"
+        )
+        if show_warning is not None:
+            show_warning(
+                "History Save Warning",
+                "Response was generated, but saving local history failed.",
+            )
+    display_markdown(output_widget, reply)
+
 def create_main_window(openai_service, config: dict) -> None:
     """Build and run the main Tkinter UI."""
     asana_token = config["asana_token"]
@@ -307,6 +335,8 @@ def create_main_window(openai_service, config: dict) -> None:
         "Long": "two paragraph",
     }
 
+    show_history_save_warning = bool(config.get("show_history_save_warning", True))
+
     # OpenAI function
     def call_openai(prompt: str, output_widget: HTMLScrolledText, mode: str) -> None:
         def worker() -> None:
@@ -321,8 +351,23 @@ def create_main_window(openai_service, config: dict) -> None:
 
             def on_success() -> None:
                 print("INFO: Saving to local history")
-                functions.database.save_to_history(mode, tone_var.get(), prompt, reply)
-                functions.ui.display_markdown(output_widget, reply)
+                warning_cb = None
+                if show_history_save_warning:
+                    warning_cb = lambda title, message: messagebox.showwarning(
+                        title,
+                        message,
+                        parent=root,
+                    )
+                _save_history_and_display(
+                    mode,
+                    tone_var.get(),
+                    prompt,
+                    reply,
+                    output_widget,
+                    save_to_history=functions.database.save_to_history,
+                    display_markdown=functions.ui.display_markdown,
+                    show_warning=warning_cb,
+                )
 
             root.after(0, on_success)
 

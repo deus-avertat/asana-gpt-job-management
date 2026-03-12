@@ -14,6 +14,13 @@ ensure_vendor_path()
 from gui.main_window import create_main_window
 from services.openai_service import OpenAIService
 
+REQUIRED_CONFIG_KEYS = [
+    "openai_api_key",
+    "asana_token",
+    "asana_project_id",
+    "asana_workspace",
+]
+
 def _show_config_error(message: str) -> None:
     if messagebox is not None:
         try:
@@ -24,6 +31,16 @@ def _show_config_error(message: str) -> None:
             pass
 
     print(f"Configuration Error: {message}", file=sys.stderr)
+
+def validate_config(config: dict) -> list[str]:
+    invalid_keys = []
+
+    for key in REQUIRED_CONFIG_KEYS:
+        value = config.get(key)
+        if value is None or (isinstance(value, str) and not value.strip()):
+            invalid_keys.append(key)
+
+    return invalid_keys
 
 def main() -> None:
     config_path = os.path.join(os.path.dirname(__file__), "config.json")
@@ -38,6 +55,15 @@ def main() -> None:
         sys.exit(1)
     except json.JSONDecodeError as exc:
         _show_config_error(f"Configuration file is malformed: {exc}")
+        sys.exit(1)
+
+    invalid_keys = validate_config(config)
+    if invalid_keys:
+        _show_config_error(
+            "Missing or empty required config keys: "
+            f"{', '.join(invalid_keys)}. "
+            "Please update config.json using config.example.json as a template."
+        )
         sys.exit(1)
 
     openai_service = OpenAIService(config["openai_api_key"])
