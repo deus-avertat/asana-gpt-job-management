@@ -13,6 +13,7 @@ import functions.database
 import functions.gpt
 import functions.ui
 from functions.files import extract_text_from_file
+from gui.theme import apply_hyprland_theme
 
 
 def create_invoice_window(
@@ -21,16 +22,17 @@ def create_invoice_window(
     """Build the invoice notes assistant window."""
 
     invoice_window = tk.Toplevel(root)
+    apply_hyprland_theme(invoice_window)
     window_title = "Invoice Notes Assistant"
     workspace = config.get("asana_workspace") if isinstance(config, dict) else None
     if workspace:
         window_title = f"{window_title} – {workspace}"
     invoice_window.title(window_title)
-    invoice_window.geometry("800x960")
+    invoice_window.geometry("900x980")
 
-    status_frame = tk.Frame(invoice_window)
+    status_frame = ttk.Frame(invoice_window, style="App.TFrame")
     status_frame.pack(fill="x", padx=10, pady=(0, 5))
-    status_label = tk.Label(status_frame, text="", anchor="w")
+    status_label = ttk.Label(status_frame, text="", anchor="w", style="Muted.TLabel")
     status_label.pack(side="left")
     progress_bar = ttk.Progressbar(status_frame, mode="indeterminate")
 
@@ -66,42 +68,41 @@ def create_invoice_window(
         model_list_var.set(model_choices[0])
 
     # Job Title
-    job_title_label = tk.Label(invoice_window, text="Enter Job Title:")
+    job_title_label = ttk.Label(invoice_window, text="Enter Job Title:", style="Header.TLabel")
     job_title_label.pack()
 
-    job_title = tk.Entry(invoice_window)
+    job_title = ttk.Entry(invoice_window)
     job_title.pack(fill="x", padx=45, pady=5)
 
     # Invoice Input
-    input_label = tk.Label(invoice_window, text="Paste Invoice Details Here:")
+    input_label = ttk.Label(invoice_window, text="Paste Invoice Details Here:", style="Header.TLabel")
     input_label.pack()
 
     input_text = scrolledtext.ScrolledText(invoice_window, height=4, wrap=tk.WORD)
     input_text.pack(fill="both", padx=6, pady=5, expand=True)
 
-    output_label = tk.Label(invoice_window, text="Invoice Assistant Output:")
+    output_label = ttk.Label(invoice_window, text="Invoice Assistant Output:", style="Header.TLabel")
     output_text = HTMLScrolledText(invoice_window, height=5)
     functions.ui.enable_html_clipboard_copy(invoice_window, output_text)
 
-    button_frame_main = tk.Frame(invoice_window)
+    button_frame_main = ttk.Frame(invoice_window, style="App.TFrame")
     button_frame_main.pack()
 
-    button_frame_left = tk.Frame(button_frame_main)
+    button_frame_left = ttk.Frame(button_frame_main, style="App.TFrame")
     button_frame_left.grid(column=0, row=0, padx=10)
-    button_frame_left_top = tk.Frame(button_frame_left, bd=1, relief="groove", pady=5)
+    button_frame_left_top = ttk.Frame(button_frame_left, style="Card.TFrame", padding=10)
     button_frame_left_top.pack(pady=5)
-    button_frame_left_bottom = tk.Frame(button_frame_left, bd=1, relief="groove", pady=5)
+    button_frame_left_bottom = ttk.Frame(button_frame_left, style="Card.TFrame", padding=10)
     button_frame_left_bottom.pack(pady=5)
 
-    button_frame_right = tk.Frame(button_frame_main)
+    button_frame_right = ttk.Frame(button_frame_main, style="App.TFrame")
     button_frame_right.grid(column=1, row=0, padx=10)
-    button_frame_right_top = tk.Frame(button_frame_right, bd=1, relief="groove", pady=5)
+    button_frame_right_top = ttk.Frame(button_frame_right, style="Card.TFrame", padding=10)
     button_frame_right_top.pack(pady=5)
-    button_frame_right_bottom = tk.Frame(button_frame_right, bd=1, relief="groove", pady=5)
+    button_frame_right_bottom = ttk.Frame(button_frame_right, style="Card.TFrame", padding=10)
     button_frame_right_bottom.pack(pady=5)
 
-    model_list_label = tk.Label(button_frame_right_top, text="Select GPT Model")
-    model_list_label.config(font=("Segoe UI", 9, "bold"))
+    model_list_label = ttk.Label(button_frame_right_top, text="Select GPT Model", style="Header.TLabel")
     model_list_label.grid(row=0, column=0, padx=5)
 
     model_list = ttk.OptionMenu(
@@ -125,7 +126,7 @@ def create_invoice_window(
     # )
     # note_style_menu.grid(row=0, column=1, padx=5)
 
-    checkbox_frame = tk.Frame(button_frame_right)
+    checkbox_frame = ttk.Frame(button_frame_right, style="App.TFrame")
     checkbox_frame.pack(pady=5)
 
     # prompt_frame = tk.Frame(invoice_window, bd=1, relief="groove")
@@ -163,9 +164,10 @@ def create_invoice_window(
         else:  # pragma: no cover - fallback for unexpected embedding contexts
             threading.Thread(target=worker, daemon=True).start()
 
-    create_notes_button = tk.Button(
+    create_notes_button = ttk.Button(
         button_frame_left_top,
         text="Summarise Invoice",
+        style="Primary.TButton",
         command=lambda: functions.gpt.draft_invoice_note(
             input_text.get("1.0", tk.END).strip(),
             job_title.get(),
@@ -189,14 +191,14 @@ def create_invoice_window(
     # )
     # prompt_button.grid(row=0, column=0, pady=5, padx=5)
 
-    copy_button = tk.Button(
+    copy_button = ttk.Button(
         button_frame_left_bottom,
         text="Copy Output",
         command=lambda: functions.ui.copy_output(invoice_window, output_text),
     )
     copy_button.grid(row=0, column=0, padx=5)
 
-    back_button = tk.Button(
+    back_button = ttk.Button(
         button_frame_left_bottom,
         text="Back to Email Assistant",
         command=show_main_callback,
