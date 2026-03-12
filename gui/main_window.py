@@ -20,6 +20,7 @@ import functions.gpt
 import functions.ui
 from functions.files import extract_text_from_file
 from gui.invoice_window import create_invoice_window
+from gui.theme import apply_hyprland_theme
 
 # GUI ----------------------------------------------------------------
 
@@ -109,9 +110,10 @@ def create_main_window(openai_service, config: dict) -> None:
     # Root Window
     root = tk.Tk()
     root.title("ChatGPT Email Assistant")
-    root.geometry("800x960")
+    root.geometry("900x980")
+    apply_hyprland_theme(root)
 
-    fallback_models = ["gpt-4", "gpt-4.1", "gpt-5", "o4-mini"]
+    fallback_models = ["o4-mini", "gpt-4", "gpt-4.1", "gpt-5", "gpt-5.4"]
     model_choices_raw = config.get("model_choices")
     model_choices = (
         [entry for entry in model_choices_raw if isinstance(entry, str) and entry]
@@ -190,9 +192,9 @@ def create_main_window(openai_service, config: dict) -> None:
 
     loading_manager = LoadingIndicatorManager()
 
-    status_frame = tk.Frame(root)
+    status_frame = ttk.Frame(root, style="App.TFrame")
     status_frame.pack(fill="x", padx=10, pady=(0, 5))
-    status_label = tk.Label(status_frame, text="", anchor="w")
+    status_label = ttk.Label(status_frame, text="", anchor="w", style="Muted.TLabel")
     status_label.pack(side="left")
     progress_bar = ttk.Progressbar(status_frame, mode="indeterminate")
 
@@ -236,14 +238,14 @@ def create_main_window(openai_service, config: dict) -> None:
     scrolled_font.configure(size=10)
 
     # Email Input
-    input_label = tk.Label(root, text="Paste Email Content Here:")
+    input_label = ttk.Label(root, text="Paste Email Content Here:", style="Header.TLabel")
     input_label.pack()
 
     input_text = HTMLScrolledText(root, height=10, font=scrolled_font)
     input_text.pack(fill="both", padx=6, pady=5, expand=True)
     functions.ui.enable_html_clipboard_paste(input_text)
 
-    output_label = tk.Label(root, text="ChatGPT Output:")
+    output_label = ttk.Label(root, text="ChatGPT Output:", style="Header.TLabel")
     output_text = HTMLScrolledText(root, height=10, font=scrolled_font)
     functions.ui.enable_html_clipboard_copy(root, output_text)
 
@@ -264,25 +266,28 @@ def create_main_window(openai_service, config: dict) -> None:
     refresh_button.pack(side="left", padx=5)
 
     # Button Frames
-    button_frame_main = tk.Frame(root)
+    button_frame_main = ttk.Frame(root, style="App.TFrame")
     button_frame_main.pack()
 
-    button_frame_left = tk.Frame(button_frame_main)
+    button_frame_left = ttk.Frame(button_frame_main, style="App.TFrame")
     button_frame_left.grid(column=0, row=0, padx=10)
-    button_frame_left_top = tk.Frame(button_frame_left, bd=1, relief="groove", pady=5)
+    button_frame_left_top = ttk.Frame(button_frame_left, style="Card.TFrame", padding=10)
     button_frame_left_top.pack(pady=5)
-    button_frame_left_bottom = tk.Frame(button_frame_left, bd=1, relief="groove", pady=5)
+    button_frame_left_bottom = ttk.Frame(button_frame_left, style="Card.TFrame", padding=10)
     button_frame_left_bottom.pack(pady=10)
 
-    button_frame_right = tk.Frame(button_frame_main)
+    button_frame_right = ttk.Frame(button_frame_main, style="App.TFrame")
     button_frame_right.grid(column=1, row=0, padx=10)
-    button_frame_right_top = tk.Frame(button_frame_right, bd=1, relief="groove", pady=5)
+    button_frame_right_top = ttk.Frame(button_frame_right, style="Card.TFrame", padding=10)
     button_frame_right_top.pack(pady=5)
-    button_frame_right_bottom = tk.Frame(button_frame_right, bd=1, relief="groove", pady=5)
+    button_frame_right_bottom = ttk.Frame(button_frame_right, style="Card.TFrame", padding=10)
     button_frame_right_bottom.pack(pady=10)
 
-    model_list_label = tk.Label(button_frame_right_top, text="Select GPT Model")
-    model_list_label.config(font=("Segoe UI", 9, "bold"))
+    model_list_label = ttk.Label(
+        button_frame_right_top,
+        text="Select GPT Model",
+        style="Card.Header.TLabel",
+    )
     model_list_label.grid(row=0, column=0, padx=5)
 
     model_list = ttk.OptionMenu(
@@ -348,9 +353,10 @@ def create_main_window(openai_service, config: dict) -> None:
         invoice_window.lift()
 
     # Summarize content in the email field
-    summarize_button = tk.Button(
+    summarize_button = ttk.Button(
         button_frame_left_top,
         text="Summarise",
+        style="Primary.TButton",
         command=lambda: functions.gpt.summarize(
             input_text.get("1.0", tk.END).strip(),
             model_list_var.get(),
@@ -366,7 +372,7 @@ def create_main_window(openai_service, config: dict) -> None:
     summarize_button.grid(row=0, column=0, padx=5)
 
     # Draft response based on content in the email field
-    draft_button = tk.Button(
+    draft_button = ttk.Button(
         button_frame_left_top,
         text="Draft Reply",
         command=lambda: functions.gpt.draft_reply(
@@ -380,11 +386,11 @@ def create_main_window(openai_service, config: dict) -> None:
     draft_button.grid(row=0, column=1, padx=5)
 
     # Attach file button
-    attach_button = tk.Button(button_frame_left_top, text="Attach Document", command=attach_file)
+    attach_button = ttk.Button(button_frame_left_top, text="Attach Document", command=attach_file)
     attach_button.grid(row=0, column=2, padx=5)
 
     # Copy response text
-    copy_button = tk.Button(
+    copy_button = ttk.Button(
         button_frame_left_bottom,
         text="Copy Output",
         command=lambda: functions.ui.copy_output(root, output_text),
@@ -449,72 +455,84 @@ def create_main_window(openai_service, config: dict) -> None:
 
         run_with_loading("Creating Asana task…", worker)
 
-    asana_button = tk.Button(
+    asana_button = ttk.Button(
         button_frame_left_bottom,
         text="Add to Asana",
+        style="Primary.TButton",
         command=send_to_asana_with_loading,
     )
     asana_button.grid(row=1, column=1, padx=5)
 
-    invoice_button = tk.Button(
+    invoice_button = ttk.Button(
         button_frame_right_bottom,
         text="Switch to Invoicing Notes",
+        style="Primary.TButton",
         command=show_invoice_window,
     )
     invoice_button.grid(row=0, column=0, columnspan=2, padx=5, pady=(0, 5), sticky="ew")
 
-    options_frame = tk.Frame(root)
+    options_frame = ttk.Frame(root, style="App.TFrame")
     options_frame.pack()
 
-    draft_frame = tk.Frame(options_frame, bd=1, relief="groove")
+    draft_frame = ttk.Frame(options_frame, style="Card.TFrame", padding=10)
     draft_frame.grid(row=0, column=1)
 
-    tone_label = tk.Label(draft_frame, text="Select Tone for Drafted Reply:")
-    tone_label.config(font=("Segoe UI", 9, "bold"))
+    tone_label = ttk.Label(
+        draft_frame,
+        text="Select Tone for Drafted Reply:",
+        style="Card.Header.TLabel",
+    )
     tone_label.grid(row=0, column=1, padx=5)
 
     tone_menu = ttk.OptionMenu(draft_frame, tone_var, "Professional", "Professional", "Semi-professional", "Casual")
     tone_menu.grid(row=1, column=1, padx=5)
 
-    length_label = tk.Label(draft_frame, text="Select Length for Drafted Reply:")
-    length_label.config(font=("Segoe UI", 9, "bold"))
+    length_label = ttk.Label(
+        draft_frame,
+        text="Select Length for Drafted Reply:",
+        style="Card.Header.TLabel",
+    )
     length_label.grid(row=2, column=1, padx=5)
 
     length_menu = ttk.OptionMenu(draft_frame, length_var, "Short", "Short", "Medium", "Long")
     length_menu.grid(row=3, column=1, padx=5)
 
-    checkbox_frame = tk.Frame(options_frame, bd=1, relief="groove")
+    checkbox_frame = ttk.Frame(options_frame, style="Card.TFrame", padding=10)
     checkbox_frame.grid(row=0, column=2, padx=5)
 
     task_checkbox_var = tk.BooleanVar()
-    task_checkbox = tk.Checkbutton(
+    task_checkbox = ttk.Checkbutton(
         checkbox_frame,
         text="Include task list in summary?",
         variable=task_checkbox_var,
+        style="Card.TCheckbutton",
     )
     task_checkbox.grid(row=1, column=0, padx=5)
 
     fixes_checkbox_var = tk.BooleanVar()
-    fixes_checkbox = tk.Checkbutton(
+    fixes_checkbox = ttk.Checkbutton(
         checkbox_frame,
         text="Provide possible solutions to issue?",
         variable=fixes_checkbox_var,
+        style="Card.TCheckbutton",
     )
     fixes_checkbox.grid(row=2, column=0, padx=5)
 
     attached_file_checkbox_var = tk.BooleanVar()
-    attached_file_checkbox = tk.Checkbutton(
+    attached_file_checkbox = ttk.Checkbutton(
         checkbox_frame,
         text="Summarise attached document?",
         variable=attached_file_checkbox_var,
+        style="Card.TCheckbutton",
     )
     attached_file_checkbox.grid(row=3, column=0, padx=5)
 
-    assignee_frame = tk.Frame(options_frame, bd=1, relief="groove")
+    assignee_frame = ttk.Frame(options_frame, style="Card.TFrame", padding=10)
     assignee_frame.grid(row=0, column=3, padx=5)
 
-    assignee_label = tk.Label(assignee_frame, text="Assignee")
-    assignee_label.config(font=("Segoe UI", 9, "bold"))
+    assignee_label = ttk.Label(
+        assignee_frame, text="Assignee", style="Card.Header.TLabel"
+    )
     assignee_label.grid(row=0, column=0, padx=5)
 
     assignee_var = tk.StringVar(value=default_assignee)
@@ -527,15 +545,17 @@ def create_main_window(openai_service, config: dict) -> None:
     )
     assignee_menu.grid(row=1, column=0, padx=5)
 
-    cal_label = tk.Label(assignee_frame, text="Due Date")
-    cal_label.config(font=("Segoe UI", 9, "bold"))
+    cal_label = ttk.Label(
+        assignee_frame, text="Due Date", style="Card.Header.TLabel"
+    )
     cal_label.grid(row=0, column=1, padx=5)
 
     cal_var = DateEntry(assignee_frame, date_pattern="yyyy-mm-dd")
     cal_var.grid(row=1, column=1, padx=5)
 
-    priority_label = tk.Label(assignee_frame, text="Priority")
-    priority_label.config(font=("Segoe UI", 9, "bold"))
+    priority_label = ttk.Label(
+        assignee_frame, text="Priority", style="Card.Header.TLabel"
+    )
     priority_label.grid(row=2, column=0, padx=5)
 
     priority_var = tk.StringVar(value=default_priority)
@@ -548,22 +568,25 @@ def create_main_window(openai_service, config: dict) -> None:
     )
     priority_menu.grid(row=3, column=0, padx=5)
 
-    prompt_frame = tk.Frame(root, bd=1, relief="groove")
+    prompt_frame = ttk.Frame(root, style="Card.TFrame", padding=10)
     prompt_frame.pack(fill="x", padx=100, pady=5)
 
-    prompt_label = tk.Label(prompt_frame, text="Custom ChatGPT Prompt:")
-    prompt_label.config(font=("Segoe UI", 9, "bold"))
+    prompt_label = ttk.Label(
+        prompt_frame,
+        text="Custom ChatGPT Prompt:",
+        style="Card.Header.TLabel",
+    )
     prompt_label.pack()
 
-    prompt_entry = tk.Entry(prompt_frame)
+    prompt_entry = ttk.Entry(prompt_frame)
     prompt_entry.pack(fill="x", padx=5, pady=5)
 
-    prompt_button_frame = tk.Frame(prompt_frame)
+    prompt_button_frame = ttk.Frame(prompt_frame, style="Card.TFrame")
     prompt_button_frame.pack()
 
     include_email_checkbox_var = tk.BooleanVar()
 
-    prompt_button = tk.Button(
+    prompt_button = ttk.Button(
         prompt_button_frame,
         text="Custom Prompt",
         command=lambda: functions.gpt.custom_prompt(
@@ -576,10 +599,11 @@ def create_main_window(openai_service, config: dict) -> None:
     )
     prompt_button.grid(row=0, column=0, pady=5, padx=5)
 
-    include_email_checkbox = tk.Checkbutton(
+    include_email_checkbox = ttk.Checkbutton(
         prompt_button_frame,
         text="Include email for context?",
         variable=include_email_checkbox_var,
+        style="Card.TCheckbutton",
     )
     include_email_checkbox.grid(row=0, column=2, pady=5, padx=5)
 
