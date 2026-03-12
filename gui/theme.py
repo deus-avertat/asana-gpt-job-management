@@ -1,4 +1,5 @@
 import tkinter as tk
+import tkinter.font as tkfont
 from tkinter import ttk
 
 # Hyprland-inspired dark palette with cool accents.
@@ -17,7 +18,7 @@ FONT_FAMILY = "Segoe UI"
 
 def _configure_classic_tk_defaults(root: tk.Misc) -> None:
     """Style classic tk widgets so they blend with ttk components."""
-    root.option_add("*Font", f"{FONT_FAMILY} 10")
+    root.option_add("*Font", "{Segoe UI} 10")
     root.option_add("*Background", BG_PRIMARY)
     root.option_add("*Foreground", TEXT_PRIMARY)
 
@@ -42,8 +43,26 @@ def _configure_classic_tk_defaults(root: tk.Misc) -> None:
     root.option_add("*Checkbutton.ActiveForeground", TEXT_PRIMARY)
 
 
+def _build_theme_fonts(root: tk.Misc) -> tuple[tkfont.Font, tkfont.Font, tkfont.Font, tkfont.Font]:
+    """Create named fonts to avoid Tcl parsing issues with font families that contain spaces."""
+    default_font = tkfont.nametofont("TkDefaultFont").copy()
+    default_font.configure(family=FONT_FAMILY, size=10)
+
+    header_font = default_font.copy()
+    header_font.configure(weight="bold")
+
+    muted_font = default_font.copy()
+    muted_font.configure(size=9)
+
+    primary_button_font = default_font.copy()
+    primary_button_font.configure(weight="bold")
+
+    return default_font, header_font, muted_font, primary_button_font
+
+
 def _configure_ttk_styles(root: tk.Misc) -> ttk.Style:
     style = ttk.Style(root)
+    default_font, header_font, muted_font, primary_button_font = _build_theme_fonts(root)
 
     preferred_themes = ("vista", "clam", "alt", "default")
     available = style.theme_names()
@@ -58,7 +77,7 @@ def _configure_ttk_styles(root: tk.Misc) -> ttk.Style:
         foreground=TEXT_PRIMARY,
         fieldbackground=BG_SECONDARY,
         bordercolor=BORDER,
-        font=(FONT_FAMILY, 10),
+        font=default_font,
     )
 
     style.configure("App.TFrame", background=BG_PRIMARY)
@@ -68,13 +87,13 @@ def _configure_ttk_styles(root: tk.Misc) -> ttk.Style:
         "Header.TLabel",
         background=BG_PRIMARY,
         foreground=TEXT_PRIMARY,
-        font=(FONT_FAMILY, 10, "bold"),
+        font=header_font,
     )
     style.configure(
         "Muted.TLabel",
         background=BG_PRIMARY,
         foreground=TEXT_MUTED,
-        font=(FONT_FAMILY, 9),
+        font=muted_font,
     )
 
     style.configure(
@@ -98,7 +117,7 @@ def _configure_ttk_styles(root: tk.Misc) -> ttk.Style:
         padding=8,
         relief="flat",
         borderwidth=0,
-        font=(FONT_FAMILY, 10, "bold"),
+        font=primary_button_font,
     )
     style.map(
         "Primary.TButton",
