@@ -60,7 +60,7 @@ def create_invoice_window(
     model_choices = getattr(
         root,
         "shared_model_choices",
-        ["gpt-4", "gpt-4.1", "gpt-5", "o4-mini"],
+        ["o4-mini", "gpt-4", "gpt-4.1", "gpt-5", "gpt-5.4"],
     )
     if not isinstance(model_choices, list) or not model_choices:
         model_choices = ["gpt-4", "gpt-4.1", "gpt-5", "o4-mini"]
@@ -102,7 +102,11 @@ def create_invoice_window(
     button_frame_right_bottom = ttk.Frame(button_frame_right, style="Card.TFrame", padding=10)
     button_frame_right_bottom.pack(pady=5)
 
-    model_list_label = ttk.Label(button_frame_right_top, text="Select GPT Model", style="Header.TLabel")
+    model_list_label = ttk.Label(
+        button_frame_right_top,
+        text="Select GPT Model",
+        style="Card.Header.TLabel",
+    )
     model_list_label.grid(row=0, column=0, padx=5)
 
     model_list = ttk.OptionMenu(

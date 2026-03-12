@@ -32,10 +32,14 @@ def _configure_classic_tk_defaults(root: tk.Misc) -> None:
     root.option_add("*Text.InsertBackground", TEXT_PRIMARY)
 
     # Buttons and checkboxes
-    root.option_add("*Button.Background", BG_ELEVATED)
-    root.option_add("*Button.Foreground", TEXT_PRIMARY)
-    root.option_add("*Button.ActiveBackground", BORDER)
-    root.option_add("*Button.ActiveForeground", TEXT_PRIMARY)
+    root.option_add("*Button.Background", ACCENT)
+    root.option_add("*Button.Foreground", BG_PRIMARY)
+    root.option_add("*Button.ActiveBackground", ACCENT_ACTIVE)
+    root.option_add("*Button.ActiveForeground", BG_PRIMARY)
+    root.option_add("*Menubutton.Background", ACCENT)
+    root.option_add("*Menubutton.Foreground", BG_PRIMARY)
+    root.option_add("*Menubutton.ActiveBackground", ACCENT_ACTIVE)
+    root.option_add("*Menubutton.ActiveForeground", BG_PRIMARY)
 
     root.option_add("*Checkbutton.Background", BG_PRIMARY)
     root.option_add("*Checkbutton.Foreground", TEXT_PRIMARY)
@@ -64,7 +68,9 @@ def _configure_ttk_styles(root: tk.Misc) -> ttk.Style:
     style = ttk.Style(root)
     default_font, header_font, muted_font, primary_button_font = _build_theme_fonts(root)
 
-    preferred_themes = ("vista", "clam", "alt", "default")
+    # Native Windows themes like "vista" ignore most custom button colors.
+    # Prefer a fully styleable ttk theme so the dark palette renders consistently.
+    preferred_themes = ("clam", "alt", "default", "vista")
     available = style.theme_names()
     for theme in preferred_themes:
         if theme in available:
@@ -82,6 +88,18 @@ def _configure_ttk_styles(root: tk.Misc) -> ttk.Style:
 
     style.configure("App.TFrame", background=BG_PRIMARY)
     style.configure("Card.TFrame", background=BG_ELEVATED, relief="flat")
+    style.configure(
+        "Card.Header.TLabel",
+        background=BG_ELEVATED,
+        foreground=TEXT_PRIMARY,
+        font=header_font,
+    )
+    style.configure(
+        "Card.Muted.TLabel",
+        background=BG_ELEVATED,
+        foreground=TEXT_MUTED,
+        font=muted_font,
+    )
 
     style.configure(
         "Header.TLabel",
@@ -98,15 +116,21 @@ def _configure_ttk_styles(root: tk.Misc) -> ttk.Style:
 
     style.configure(
         "TButton",
-        background=BG_ELEVATED,
-        foreground=TEXT_PRIMARY,
+        background=ACCENT,
+        foreground=BG_PRIMARY,
         padding=8,
         relief="flat",
         borderwidth=0,
+        focuscolor=BG_PRIMARY,
+        font=primary_button_font,
     )
     style.map(
         "TButton",
-        background=[("active", BORDER), ("pressed", BORDER)],
+        background=[
+            ("disabled", BG_SECONDARY),
+            ("active", ACCENT_ACTIVE),
+            ("pressed", ACCENT_ACTIVE),
+        ],
         foreground=[("disabled", TEXT_MUTED)],
     )
 
@@ -118,15 +142,24 @@ def _configure_ttk_styles(root: tk.Misc) -> ttk.Style:
         relief="flat",
         borderwidth=0,
         font=primary_button_font,
+        focuscolor=BG_PRIMARY,
     )
     style.map(
         "Primary.TButton",
-        background=[("active", ACCENT_ACTIVE), ("pressed", ACCENT_ACTIVE)],
+        background=[
+            ("disabled", BG_SECONDARY),
+            ("active", ACCENT_ACTIVE),
+            ("pressed", ACCENT_ACTIVE),
+        ],
         foreground=[("disabled", TEXT_MUTED)],
     )
 
-    style.configure("TMenubutton", background=BG_ELEVATED, foreground=TEXT_PRIMARY)
-    style.map("TMenubutton", background=[("active", BORDER)])
+    style.configure("TMenubutton", background=ACCENT, foreground=BG_PRIMARY)
+    style.map(
+        "TMenubutton",
+        background=[("disabled", BG_SECONDARY), ("active", ACCENT_ACTIVE)],
+        foreground=[("disabled", TEXT_MUTED)],
+    )
 
     style.configure(
         "TCheckbutton",
@@ -134,6 +167,12 @@ def _configure_ttk_styles(root: tk.Misc) -> ttk.Style:
         foreground=TEXT_PRIMARY,
     )
     style.map("TCheckbutton", background=[("active", BG_PRIMARY)])
+    style.configure(
+        "Card.TCheckbutton",
+        background=BG_ELEVATED,
+        foreground=TEXT_PRIMARY,
+    )
+    style.map("Card.TCheckbutton", background=[("active", BG_ELEVATED)])
 
     style.configure(
         "TProgressbar",

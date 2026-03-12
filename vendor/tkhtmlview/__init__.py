@@ -168,7 +168,7 @@ class HTMLScrolledText(scrolledtext.ScrolledText):
 
     # -- Tag configuration ------------------------------------------------
     def _configure_tags(self) -> None:
-        base_font = tkfont.nametofont(self.cget("font")).copy()
+        base_font = self._resolve_base_font()
 
         bold_font = base_font.copy()
         bold_font.configure(weight="bold")
@@ -212,6 +212,13 @@ class HTMLScrolledText(scrolledtext.ScrolledText):
         self.raw_markdown = ""
 
 # -- Internal helpers ------------------------------------------------
+    def _resolve_base_font(self) -> tkfont.Font:
+        font_value = self.cget("font")
+        try:
+            return tkfont.nametofont(font_value).copy()
+        except tk.TclError:
+            return tkfont.Font(font=font_value).copy()
+
     def _register_link_tag(self, tag_name: str, href: str) -> None:
         self._link_tags[tag_name] = href
         self.tag_configure(tag_name, foreground="#0645AD", underline=True)

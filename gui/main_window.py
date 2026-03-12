@@ -113,7 +113,7 @@ def create_main_window(openai_service, config: dict) -> None:
     root.geometry("900x980")
     apply_hyprland_theme(root)
 
-    fallback_models = ["gpt-4", "gpt-4.1", "gpt-5", "o4-mini"]
+    fallback_models = ["o4-mini", "gpt-4", "gpt-4.1", "gpt-5", "gpt-5.4"]
     model_choices_raw = config.get("model_choices")
     model_choices = (
         [entry for entry in model_choices_raw if isinstance(entry, str) and entry]
@@ -283,7 +283,11 @@ def create_main_window(openai_service, config: dict) -> None:
     button_frame_right_bottom = ttk.Frame(button_frame_right, style="Card.TFrame", padding=10)
     button_frame_right_bottom.pack(pady=10)
 
-    model_list_label = ttk.Label(button_frame_right_top, text="Select GPT Model", style="Header.TLabel")
+    model_list_label = ttk.Label(
+        button_frame_right_top,
+        text="Select GPT Model",
+        style="Card.Header.TLabel",
+    )
     model_list_label.grid(row=0, column=0, padx=5)
 
     model_list = ttk.OptionMenu(
@@ -473,13 +477,21 @@ def create_main_window(openai_service, config: dict) -> None:
     draft_frame = ttk.Frame(options_frame, style="Card.TFrame", padding=10)
     draft_frame.grid(row=0, column=1)
 
-    tone_label = ttk.Label(draft_frame, text="Select Tone for Drafted Reply:", style="Header.TLabel")
+    tone_label = ttk.Label(
+        draft_frame,
+        text="Select Tone for Drafted Reply:",
+        style="Card.Header.TLabel",
+    )
     tone_label.grid(row=0, column=1, padx=5)
 
     tone_menu = ttk.OptionMenu(draft_frame, tone_var, "Professional", "Professional", "Semi-professional", "Casual")
     tone_menu.grid(row=1, column=1, padx=5)
 
-    length_label = ttk.Label(draft_frame, text="Select Length for Drafted Reply:", style="Header.TLabel")
+    length_label = ttk.Label(
+        draft_frame,
+        text="Select Length for Drafted Reply:",
+        style="Card.Header.TLabel",
+    )
     length_label.grid(row=2, column=1, padx=5)
 
     length_menu = ttk.OptionMenu(draft_frame, length_var, "Short", "Short", "Medium", "Long")
@@ -493,6 +505,7 @@ def create_main_window(openai_service, config: dict) -> None:
         checkbox_frame,
         text="Include task list in summary?",
         variable=task_checkbox_var,
+        style="Card.TCheckbutton",
     )
     task_checkbox.grid(row=1, column=0, padx=5)
 
@@ -501,6 +514,7 @@ def create_main_window(openai_service, config: dict) -> None:
         checkbox_frame,
         text="Provide possible solutions to issue?",
         variable=fixes_checkbox_var,
+        style="Card.TCheckbutton",
     )
     fixes_checkbox.grid(row=2, column=0, padx=5)
 
@@ -509,13 +523,16 @@ def create_main_window(openai_service, config: dict) -> None:
         checkbox_frame,
         text="Summarise attached document?",
         variable=attached_file_checkbox_var,
+        style="Card.TCheckbutton",
     )
     attached_file_checkbox.grid(row=3, column=0, padx=5)
 
     assignee_frame = ttk.Frame(options_frame, style="Card.TFrame", padding=10)
     assignee_frame.grid(row=0, column=3, padx=5)
 
-    assignee_label = ttk.Label(assignee_frame, text="Assignee", style="Header.TLabel")
+    assignee_label = ttk.Label(
+        assignee_frame, text="Assignee", style="Card.Header.TLabel"
+    )
     assignee_label.grid(row=0, column=0, padx=5)
 
     assignee_var = tk.StringVar(value=default_assignee)
@@ -528,13 +545,17 @@ def create_main_window(openai_service, config: dict) -> None:
     )
     assignee_menu.grid(row=1, column=0, padx=5)
 
-    cal_label = ttk.Label(assignee_frame, text="Due Date", style="Header.TLabel")
+    cal_label = ttk.Label(
+        assignee_frame, text="Due Date", style="Card.Header.TLabel"
+    )
     cal_label.grid(row=0, column=1, padx=5)
 
     cal_var = DateEntry(assignee_frame, date_pattern="yyyy-mm-dd")
     cal_var.grid(row=1, column=1, padx=5)
 
-    priority_label = ttk.Label(assignee_frame, text="Priority", style="Header.TLabel")
+    priority_label = ttk.Label(
+        assignee_frame, text="Priority", style="Card.Header.TLabel"
+    )
     priority_label.grid(row=2, column=0, padx=5)
 
     priority_var = tk.StringVar(value=default_priority)
@@ -550,7 +571,11 @@ def create_main_window(openai_service, config: dict) -> None:
     prompt_frame = ttk.Frame(root, style="Card.TFrame", padding=10)
     prompt_frame.pack(fill="x", padx=100, pady=5)
 
-    prompt_label = ttk.Label(prompt_frame, text="Custom ChatGPT Prompt:", style="Header.TLabel")
+    prompt_label = ttk.Label(
+        prompt_frame,
+        text="Custom ChatGPT Prompt:",
+        style="Card.Header.TLabel",
+    )
     prompt_label.pack()
 
     prompt_entry = ttk.Entry(prompt_frame)
@@ -578,6 +603,7 @@ def create_main_window(openai_service, config: dict) -> None:
         prompt_button_frame,
         text="Include email for context?",
         variable=include_email_checkbox_var,
+        style="Card.TCheckbutton",
     )
     include_email_checkbox.grid(row=0, column=2, pady=5, padx=5)
 
