@@ -1,6 +1,8 @@
 import copy
+import random
 import re
 import sys
+import time
 import tkinter as tk
 import traceback
 from contextlib import suppress
@@ -13,6 +15,75 @@ from asana.rest import ApiException
 
 import functions.ui
 
+ASANA_MAX_ATTEMPTS = 5
+ASANA_BASE_BACKOFF_SECONDS = 0.5
+ASANA_MAX_BACKOFF_SECONDS = 8.0
+
+
+def _compute_backoff(attempt: int) -> float:
+    """Return an exponential backoff delay with bounded jitter."""
+
+    exponential_delay = min(
+        ASANA_MAX_BACKOFF_SECONDS,
+        ASANA_BASE_BACKOFF_SECONDS * (2 ** (attempt - 1)),
+    )
+    jitter = random.uniform(0.0, min(1.0, exponential_delay / 2))
+    return min(ASANA_MAX_BACKOFF_SECONDS, exponential_delay + jitter)
+
+
+def _is_retryable_asana_error(exc: Exception) -> bool:
+    """Return True when the Asana exception should be retried."""
+
+    if isinstance(exc, ApiException):
+        status = getattr(exc, "status", None)
+        if status in {429, 500, 502, 503, 504}:
+            return True
+
+    message = str(exc).lower()
+    return any(
+        marker in message
+        for marker in (
+            "timeout",
+            "timed out",
+            "connection reset",
+            "temporarily unavailable",
+        )
+    )
+
+
+def _run_with_retries(operation_name: str, operation):
+    """Execute an Asana API operation with bounded retries."""
+
+    last_exc: Exception | None = None
+
+    for attempt in range(1, ASANA_MAX_ATTEMPTS + 1):
+        try:
+            return operation()
+        except Exception as exc:
+            last_exc = exc
+            is_retryable = _is_retryable_asana_error(exc)
+            if not is_retryable or attempt >= ASANA_MAX_ATTEMPTS:
+                print(
+                    f"ERR: Asana {operation_name} failed "
+                    f"(attempt {attempt}/{ASANA_MAX_ATTEMPTS}, retryable={is_retryable}): {exc}"
+                )
+                raise
+
+            sleep_for = _compute_backoff(attempt)
+            print(
+                f"WARN: Asana {operation_name} retrying "
+                f"(attempt {attempt}/{ASANA_MAX_ATTEMPTS}) in {sleep_for:.2f}s: {exc}"
+            )
+            time.sleep(sleep_for)
+
+    if last_exc is not None:
+        print(
+            f"ERR: Asana {operation_name} failed after maximum retry attempts "
+            f"({ASANA_MAX_ATTEMPTS})."
+        )
+        raise last_exc
+
+    raise RuntimeError(f"Asana {operation_name} failed without an exception.")
 
 @dataclass
 class AsanaTaskRequest:
@@ -342,7 +413,10 @@ def perform_asana_task_creation(asana_token: str, task_request: AsanaTaskRequest
     api_client = asana.ApiClient(configuration)
     tasks_api = asana.TasksApi(api_client)
 
-    task = tasks_api.create_task(task_request.body, task_request.opts)
+    task = _run_with_retries(
+        "create task",
+        lambda: tasks_api.create_task(task_request.body, task_request.opts),
+    )
     task_gid = task.get("gid")
     if not task_gid:
         print("WARN: Asana response did not contain a task GID.")
@@ -350,11 +424,17 @@ def perform_asana_task_creation(asana_token: str, task_request: AsanaTaskRequest
 
     stories_api = asana.StoriesApi(api_client)
     comment_body = {"data": {"text": task_request.original_email}}
-    stories_api.create_story_for_task(comment_body, task_gid, task_request.opts)
+    _run_with_retries(
+        "create task story",
+        lambda: stories_api.create_story_for_task(comment_body, task_gid, task_request.opts),
+    )
 
     for point in task_request.bullet_points:
         subtask_body = {"data": {"name": point, "parent": task_gid}}
-        tasks_api.create_task(subtask_body, {})
+        _run_with_retries(
+            "create subtask",
+            lambda subtask_body=subtask_body: tasks_api.create_task(subtask_body, {}),
+        )
 
     return len(task_request.bullet_points)
 
